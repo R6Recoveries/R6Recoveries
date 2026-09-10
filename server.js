@@ -165,17 +165,82 @@ app.get("/api/me", auth, (req, res) => {
   res.json({ user: safeUser(user), orders: orders.map(publicOrder) });
 });
 
-app.post("/api/orders", auth, (req, res) => {
+app.post("/api/orders", auth, async (req, res) => {
   const { service, platform, r6_username, discord_username, details } = req.body;
+
   if (!SERVICES[service] || !platform || !String(details || "").trim()) {
     return res.status(400).json({ error: "Choose a service/platform and describe what you need." });
   }
+
   const info = db.prepare(`
     INSERT INTO orders (user_id,service,platform,r6_username,discord_username,details)
     VALUES (?,?,?,?,?,?)
-  `).run(req.user.id, SERVICES[service].name, platform, r6_username || "", discord_username || "", details.trim());
+  `).run(
+    req.user.id,
+    SERVICES[service].name,
+    platform,
+    r6_username || "",
+    discord_username || "",
+    details.trim()
+  );
+
   const order = db.prepare("SELECT * FROM orders WHERE id=?").get(info.lastInsertRowid);
-  res.status(201).json({ order: publicOrder(order), payment_available: Boolean(process.env.STRIPE_SECRET_KEY) });
+
+  // Send order to Formspree
+  try {
+    await fetch("https://formspree.io/f/xaeyazlr", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        service: SERVICES[service].name,
+        platform,
+        r6_username: r6_username || "",
+        discord_username: discord_username || "",
+        details: details.trim(),
+        order_id: order.id
+      })
+    });
+  } catch (e) {
+    console.error("Formspree notification failed:", e.message);
+  }
+
+  // Send order to Discord if a webhook is configured
+  if (process.env.DISCORD_WEBHOOK_URL) {
+    try {
+      await fetch(process.env.DISCORD_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          embeds: [{
+            title: "🚨 NEW RECOVERY ORDER",
+            description: "A new operation has been submitted.",
+            fields: [
+              { name: "Service", value: SERVICES[service].name, inline: false },
+              { name: "Platform", value: platform, inline: true },
+              { name: "R6 Username", value: r6_username || "Not provided", inline: true },
+              { name: "Discord", value: discord_username || "Not provided", inline: true },
+              { name: "Details", value: details.trim().slice(0, 1024), inline: false }
+            ],
+            footer: {
+              text: `R6 Recoveries • Order #${order.id}`
+            }
+          }]
+        })
+      });
+    } catch (e) {
+      console.error("Discord notification failed:", e.message);
+    }
+  }
+
+  res.status(201).json({
+    order: publicOrder(order),
+    payment_available: Boolean(process.env.STRIPE_SECRET_KEY)
+  });
 });
 
 app.post("/api/payments/checkout", auth, async (req, res) => {
