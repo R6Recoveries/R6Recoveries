@@ -1,0 +1,326 @@
+
+:root{
+  --bg:#080a0d;
+  --bg2:#0d1117;
+  --panel:#11161d;
+  --panel2:#171e27;
+  --line:#29323d;
+  --red:#ff5a36;
+  --red2:#ff8a63;
+  --cyan:#9ee7ff;
+  --white:#f7f5ef;
+  --muted:#9aa4af;
+  --green:#a7f36b;
+  --shadow:0 30px 90px rgba(0,0,0,.55);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  color:var(--white);
+  background:
+    radial-gradient(circle at 8% 8%,rgba(255,90,54,.15),transparent 26%),
+    radial-gradient(circle at 92% 24%,rgba(158,231,255,.10),transparent 25%),
+    linear-gradient(135deg,#07090c,#0a0e13 48%,#0c1015);
+  font-family:Inter,sans-serif;
+  overflow-x:hidden;
+}
+body:before{display:none}
+a{text-decoration:none;color:inherit}
+button,input,select,textarea{font:inherit}
+.shell{width:min(1280px,calc(100% - 56px));margin:auto}
+.ambient{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;z-index:-1}
+.ambient-a{width:620px;height:620px;right:-250px;top:40px;background:rgba(255,90,54,.14)}
+.ambient-b{width:520px;height:520px;left:-280px;top:700px;background:rgba(158,231,255,.09)}
+.noise{opacity:.025}
+.scanline{height:2px;background:linear-gradient(90deg,transparent,var(--red),var(--cyan),transparent);opacity:.45}
+
+.topbar{
+  height:82px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  position:sticky;top:0;z-index:60;
+  background:rgba(8,10,13,.82);
+  backdrop-filter:blur(24px);
+}
+.nav{height:100%;display:flex;align-items:center;justify-content:space-between}
+.brand{gap:12px;font:900 25px/1 "Barlow Condensed";letter-spacing:2px}
+.brandMark{
+  width:42px;height:34px;border:1px solid var(--red);
+  border-radius:10px;color:var(--red);
+  font:900 19px "Barlow Condensed";
+  box-shadow:0 0 30px rgba(255,90,54,.18);
+}
+.brand small{font-size:8px;color:#78828d;letter-spacing:2px}
+.navlinks{display:flex;gap:34px}
+.navlinks a{font-size:9px;letter-spacing:2px;color:#aeb7c1}
+.navlinks a:hover{color:var(--red2)}
+
+.btn{
+  border:1px solid var(--red);
+  border-radius:11px;
+  background:var(--red);
+  color:#160906;
+  padding:15px 22px;
+  font:900 10px Inter;
+  letter-spacing:1.5px;
+  cursor:pointer;
+  transition:.22s;
+  position:relative;overflow:hidden;
+}
+.btn:before{content:"";position:absolute;inset:0;transform:translateX(-110%);background:#fff4;transition:.25s}
+.btn:hover:before{transform:translateX(110%)}
+.btn:hover{transform:translateY(-3px);box-shadow:0 16px 44px rgba(255,90,54,.22)}
+.btn-small{padding:10px 14px;font-size:9px;border-radius:9px}
+.btn-hot{background:var(--red);border-color:var(--red);color:#fff}
+.btn-ghost{background:transparent;color:var(--white);border-color:#46515d}
+.textBtn{background:none;border:0;color:var(--cyan);font:800 9px Inter;letter-spacing:1px;cursor:pointer}
+
+.hero{
+  min-height:790px;
+  position:relative;
+  display:flex;align-items:center;overflow:hidden;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background:
+    linear-gradient(115deg,rgba(255,90,54,.06),transparent 42%),
+    radial-gradient(circle at 80% 50%,rgba(158,231,255,.07),transparent 30%);
+}
+.heroMesh{
+  opacity:.10;
+  background-image:linear-gradient(rgba(255,255,255,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.11) 1px,transparent 1px);
+  background-size:72px 72px;
+  transform:perspective(800px) rotateX(58deg) scale(1.5);
+}
+.hero:after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 55%,rgba(255,90,54,.07)),radial-gradient(circle at 70% 45%,rgba(255,90,54,.10),transparent 24%);
+}
+.heroCrosshair{
+  right:7%;top:18%;width:470px;height:470px;
+  border:1px solid rgba(158,231,255,.18);
+  box-shadow:0 0 140px rgba(255,90,54,.12);
+}
+.heroCrosshair:before,.heroCrosshair:after{background:rgba(158,231,255,.16)}
+.heroGrid{grid-template-columns:1.15fr .85fr;gap:70px}
+.heroCopy{padding:95px 0}
+.kicker{font-size:9px;letter-spacing:3px;color:var(--cyan)}
+.kicker i{width:28px;height:3px;background:var(--red);box-shadow:0 0 16px rgba(255,90,54,.7)}
+.hero h1{
+  font:italic 800 clamp(88px,11vw,158px)/.77 "Barlow Condensed";
+  letter-spacing:-4px;margin:25px 0 36px;
+}
+.hero h1 span,h2 span{color:var(--red2);text-shadow:0 0 36px rgba(255,90,54,.28)}
+.heroLead{max-width:670px;color:#b7c0ca;font-size:15px;line-height:1.9}
+.heroActions{gap:12px;margin-top:32px}
+.heroMeta{gap:30px;margin-top:45px;font-size:8px;color:#75808c}
+.heroMeta b{color:var(--white)}
+
+.operationCard{
+  width:390px;
+  border:1px solid #38434f;
+  border-radius:22px;
+  background:rgba(14,19,25,.88);
+  box-shadow:var(--shadow),0 0 80px rgba(255,90,54,.08);
+  backdrop-filter:blur(22px);
+  transform:rotate(2deg);
+  overflow:hidden;
+}
+.opTop,.panelBar{
+  padding:16px 19px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  font-size:9px;letter-spacing:1.5px;color:#aab3bd;
+}
+.opRadar{height:240px;background:radial-gradient(circle,#17232c,#0b0f14 64%)}
+.radarRing{border-color:rgba(158,231,255,.22)}
+.r2{border-color:rgba(255,90,54,.24)}
+.radarSweep{background:linear-gradient(90deg,var(--red),transparent)}
+.radarDot{width:9px;height:9px}
+.radarLabel{font-size:8px}
+.opMetrics>div{padding:17px 0}
+.opMetrics span{font-size:8px}
+.opMetrics strong{font-size:20px}
+.meter{height:4px}
+.opFoot{padding:15px 19px;font-size:8px}
+
+.statusbar{border-bottom:1px solid rgba(255,255,255,.08);background:#0b0f14}
+.statusInner{min-height:46px;font-size:8px;letter-spacing:1.5px}
+.statusInner b{color:#c7d0d9}
+
+.section{padding:112px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.sectionHead{margin-bottom:48px}
+.sectionHead>p{font-size:9px;color:#7f8994}
+.sectionHead h2,.authIntro h2,.dashHeader h2{
+  font-size:clamp(62px,7vw,98px);
+  line-height:.84;
+}
+.serviceGrid{grid-template-columns:repeat(4,1fr);gap:16px}
+.serviceCard{
+  min-height:435px;padding:28px 24px;
+  border:1px solid #2e3843;
+  border-radius:20px;
+  background:linear-gradient(155deg,#141a22,#0b0f14);
+  box-shadow:0 16px 50px rgba(0,0,0,.18);
+}
+.serviceCard:hover{transform:translateY(-12px);border-color:#5c6975;box-shadow:0 28px 80px #000,0 0 50px rgba(158,231,255,.08)}
+.serviceCard.featured{
+  border-color:#7e3b2d;
+  background:linear-gradient(155deg,#201512,#0d1015);
+}
+.serviceCard.featured:hover{border-color:var(--red);box-shadow:0 28px 80px #000,0 0 60px rgba(255,90,54,.17)}
+.cardGlow{width:260px;height:260px;right:-130px;top:-120px;background:radial-gradient(circle,rgba(158,231,255,.15),transparent 68%)}
+.featured .cardGlow{background:radial-gradient(circle,rgba(255,90,54,.22),transparent 68%)}
+.popular{padding:8px 11px;font-size:8px;border-radius:0 0 8px 0}
+.cardNo{font-size:55px;color:#242e39}
+.serviceIcon{font-size:35px;color:var(--cyan)}
+.serviceTag{font-size:8px;letter-spacing:2.5px}
+.serviceCard h3{font-size:34px;line-height:.92;margin:16px 0}
+.serviceCard p{font-size:12px;color:#9aa4af;line-height:1.75}
+.serviceBottom{left:24px;right:20px;bottom:23px}
+.serviceBottom strong{font-size:53px;color:var(--red2)}
+.arrowBtn{font-size:9px}
+.arrowBtn span{font-size:17px}
+
+.systemGrid{gap:16px}
+.diagnostic,.terminalPanel,.dashPanel{
+  border:1px solid #2b3540;
+  border-radius:18px;
+  background:rgba(14,19,25,.9);
+  overflow:hidden;
+}
+.moduleGrid{gap:1px}
+.module{min-height:145px;padding:21px;background:#11171f}
+.module:hover,.module.active{background:#18212b;box-shadow:inset 4px 0 var(--red)}
+.module b{font-size:28px;color:#5a6875}
+.module strong{font-size:10px;margin-top:17px}
+.module small{font-size:7px}
+.terminalLines{font-size:10px;line-height:1.9}
+.miniStats{gap:16px}
+.miniStats>div,.featureStrip>div,.processGrid>div{
+  border:1px solid #2a343f;
+  border-radius:16px;
+  background:#10161d;
+}
+.miniStats strong{font-size:46px}
+.miniStats span{font-size:8px}
+
+.portalPreview{
+  border:1px solid #303b46;
+  border-radius:20px;
+  overflow:hidden;
+  background:#0e141b;
+  box-shadow:var(--shadow);
+}
+.previewSide{padding:30px;border-right:1px solid #2a343f}
+.previewLabel{font-size:8px;letter-spacing:2px}
+.avatarRing{border:1px solid var(--red);box-shadow:0 0 40px rgba(255,90,54,.14)}
+.previewSide h3{font-size:36px}
+.previewSide small{font-size:8px}
+.previewStats{font-size:8px}
+.previewStats b{font-size:28px}
+.previewMain{padding:28px}
+.previewTop{font-size:10px}
+.previewTop em{border:1px solid rgba(167,243,107,.4);color:var(--green);padding:6px 9px;border-radius:999px}
+.progressBig>div:first-child{font-size:9px}
+.progressBig strong{font-size:44px;color:var(--red2)}
+.bigMeter{height:8px;border-radius:999px;overflow:hidden}
+.timeline{gap:12px}
+.timeline>div{border:1px solid #2a343f;border-radius:14px;padding:16px;background:#11171f}
+.timeline b{font-size:27px}
+.timeline span{font-size:9px}
+.timeline small{font-size:8px}
+
+.featureStrip,.processGrid{gap:16px}
+.featureStrip>div,.processGrid>div{padding:25px}
+.featureStrip b,.processGrid b{font-size:48px;color:var(--red2)}
+.featureStrip strong,.processGrid strong{font-size:12px}
+.featureStrip p,.processGrid p{font-size:11px;color:#9aa4af;line-height:1.7}
+
+.faqGrid{gap:12px}
+.faqGrid details{border:1px solid #2a343f;border-radius:14px;background:#10161d;padding:18px 20px}
+.faqGrid summary{font-size:13px}
+.faqGrid p{font-size:12px;line-height:1.8;color:#9aa4af}
+
+.authShell{gap:16px}
+.authIntro,.authBox{border:1px solid #2b3540;border-radius:18px;background:#10161d}
+.authIntro{padding:44px}
+.authIntro p{font-size:14px;line-height:1.8;color:#a8b2bd}
+.authSeal{font-size:8px}
+.authBox{padding:40px}
+.formTitle{font-size:53px}
+label{font-size:8px}
+input,select,textarea{
+  border-radius:10px;
+  border:1px solid #35404b;
+  background:#0a0e13;
+  color:#fff;
+  padding:13px 14px;
+}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(158,231,255,.08)}
+
+.profileCard{border:1px solid #2b3540;border-radius:18px;background:#10161d}
+.profileCard h3{font-size:24px}
+.profileCard p{font-size:10px}
+.profileStats strong{font-size:42px}
+.profileStats span{font-size:8px}
+.orderTop{font-size:14px}
+.status{font-size:8px;border-radius:999px}
+.orderMeta{font-size:9px}
+.stage{font-size:10px;border-radius:8px}
+
+.adminStats{gap:16px}
+.adminStat{padding:26px;border:1px solid #2b3540;border-radius:16px;background:#10161d}
+.adminStat strong{font-size:58px}
+.adminStat span{font-size:8px}
+.adminItem{padding:20px}
+.adminItem strong{font-size:12px}
+.adminItem small{font-size:8px}
+
+.modalBack{background:rgba(2,4,7,.86)}
+.modal{border:1px solid var(--red);border-radius:18px;padding:34px;background:#10161d}
+.modal h2{font-size:66px}
+.modal .close{font-size:32px}
+.modal textarea{border-radius:10px}
+.toast{font-size:11px;border-radius:10px}
+.footer{padding:36px 0;font-size:8px}
+
+@media(max-width:1000px){
+  .navlinks{display:none}
+  .heroGrid{grid-template-columns:1fr}
+  .operationCard{display:none}
+  .serviceGrid{grid-template-columns:1fr 1fr}
+  .systemGrid,.portalPreview,.authShell,.dashGrid{grid-template-columns:1fr}
+  .previewSide{border-right:0;border-bottom:1px solid #2a343f}
+  .timeline{grid-template-columns:1fr 1fr}
+  .adminStats,.miniStats{grid-template-columns:1fr 1fr}
+  .adminItem{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .shell{width:calc(100% - 30px)}
+  .topbar{height:70px}
+  .hero{min-height:700px}
+  .hero h1{font-size:78px}
+  .heroLead{font-size:14px}
+  .heroActions{flex-direction:column}
+  .heroActions .btn{width:100%}
+  .heroMeta{gap:12px;flex-wrap:wrap}
+  .statusInner{gap:12px;flex-wrap:wrap;padding:10px 0}
+  .statusInner span:nth-child(2),.statusInner span:nth-child(3){display:none}
+  .section{padding:82px 0}
+  .sectionHead{display:block}
+  .sectionHead>p{margin-top:17px}
+  .sectionHead h2,.dashHeader h2{font-size:60px}
+  .serviceGrid,.moduleGrid,.featureStrip,.processGrid,.faqGrid{grid-template-columns:1fr}
+  .serviceCard{min-height:390px}
+  .portalPreview{display:block}
+  .previewSide{padding:26px}
+  .previewMain{padding:24px}
+  .timeline{grid-template-columns:1fr}
+  .authIntro,.authBox{padding:30px}
+  .authIntro{border-right:0;border-bottom:1px solid #2a343f}
+  .authIntro h2{font-size:54px}
+  .profileCard{flex-wrap:wrap}
+  .profileStats{margin-left:0;width:100%;justify-content:space-between}
+  .adminStats{grid-template-columns:1fr 1fr}
+  .adminItem{grid-template-columns:1fr}
+  .footer{flex-direction:column;gap:10px}
+}
