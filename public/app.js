@@ -1,5 +1,6 @@
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => [...document.querySelectorAll(s)];
+```javascript
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 const API = "/api";
 
@@ -23,48 +24,60 @@ const serviceNames = {
 };
 
 /* =========================
-   UTILITIES
+   TOASTS
 ========================= */
 
-function toast(msg, bad = false) {
+function toast(message, bad = false) {
   const container = $("#toast");
 
   if (!container) {
-    alert(msg);
+    console.log(bad ? "ERROR:" : "INFO:", message);
     return;
   }
 
-  const x = document.createElement("div");
+  const element = document.createElement("div");
 
-  x.className = "toast" + (bad ? " bad" : "");
-  x.textContent = msg;
+  element.className =
+    "toast" + (bad ? " bad" : "");
 
-  container.appendChild(x);
+  element.textContent = message;
+
+  container.appendChild(element);
 
   setTimeout(() => {
-    x.remove();
+    element.remove();
   }, 3800);
 }
 
-async function api(path, opts = {}) {
-  opts.headers = {
-    ...(opts.headers || {}),
-    ...(token
-      ? {
-          Authorization: `Bearer ${token}`
-        }
-      : {})
+/* =========================
+   API
+========================= */
+
+async function api(path, options = {}) {
+  const headers = {
+    ...(options.headers || {})
   };
 
+  if (token) {
+    headers.Authorization =
+      `Bearer ${token}`;
+  }
+
   if (
-    opts.body &&
-    !(opts.body instanceof FormData)
+    options.body &&
+    !(options.body instanceof FormData)
   ) {
-    opts.headers["Content-Type"] =
+    headers["Content-Type"] =
       "application/json";
   }
 
-  const response = await fetch(API + path, opts);
+  const response = await fetch(
+    API + path,
+    {
+      ...options,
+      headers
+    }
+  );
 
   let data = {};
 
@@ -76,12 +89,17 @@ async function api(path, opts = {}) {
 
   if (!response.ok) {
     throw new Error(
-      data.error || "Something went wrong."
+      data.error ||
+        `Request failed (${response.status}).`
     );
   }
 
   return data;
 }
+
+/* =========================
+   HTML ESCAPE
+========================= */
 
 function esc(value) {
   return String(value ?? "").replace(
@@ -131,19 +149,22 @@ function nav() {
   }
 }
 
-function showOnly(id) {
-  ["auth", "dashboard", "admin"].forEach(
-    (section) => {
-      const element = $("#" + section);
-
-      if (element) {
-        element.classList.add("hidden");
-      }
-    }
-  );
-
-  if (id) {
+function showOnly(sectionId) {
+  [
+    "auth",
+    "dashboard",
+    "admin"
+  ].forEach((id) => {
     const element = $("#" + id);
+
+    if (element) {
+      element.classList.add("hidden");
+    }
+  });
+
+  if (sectionId) {
+    const element =
+      $("#" + sectionId);
 
     if (element) {
       element.classList.remove("hidden");
@@ -156,8 +177,11 @@ function showAuth(mode = "login") {
 
   showOnly("auth");
 
-  const loginForm = $("#loginForm");
-  const registerForm = $("#registerForm");
+  const loginForm =
+    $("#loginForm");
+
+  const registerForm =
+    $("#registerForm");
 
   if (loginForm) {
     loginForm.classList.toggle(
@@ -175,7 +199,7 @@ function showAuth(mode = "login") {
 }
 
 /* =========================
-   ACCOUNT
+   CURRENT USER
 ========================= */
 
 async function loadMe() {
@@ -185,86 +209,244 @@ async function loadMe() {
   }
 
   try {
-    const data = await api("/me");
+    const data =
+      await api("/me");
+
+    if (
+      !data ||
+      !data.user
+    ) {
+      throw new Error(
+        "The server returned an invalid account response."
+      );
+    }
 
     me = data.user;
+
+    /*
+      Make absolutely sure orders is
+      always an array.
+    */
+    if (!Array.isArray(data.orders)) {
+      data.orders = [];
+    }
+
+    window.__orders =
+      data.orders;
 
     renderDashboard(data);
 
     nav();
-  } catch {
-    token = null;
-    me = null;
 
-    localStorage.removeItem("r6_token");
+  } catch (error) {
+    console.error(
+      "Dashboard loading error:",
+      error
+    );
 
-    nav();
+    /*
+      IMPORTANT:
+      Do NOT silently delete the token
+      on a temporary server/database error.
+    */
 
-    showOnly(null);
+    if (
+      error.message.includes(
+        "401"
+      ) ||
+      error.message
+        .toLowerCase()
+        .includes("token") ||
+      error.message
+        .toLowerCase()
+        .includes("unauthorized")
+    ) {
+      token = null;
+      me = null;
+
+      localStorage.removeItem(
+        "r6_token"
+      );
+
+      nav();
+
+      showAuth("login");
+
+      toast(
+        "Your session expired. Please sign in again.",
+        true
+      );
+
+      return;
+    }
+
+    toast(
+      "Could not load your dashboard: " +
+        error.message,
+      true
+    );
+
+    /*
+      Show the dashboard even when
+      the request failed, so the user
+      can actually see the error.
+    */
+
+    showOnly("dashboard");
+
+    const orders =
+      $("#orders");
+
+    if (orders) {
+      orders.innerHTML = `
+        <div class="statusBox">
+
+          <strong
+            style="
+              display:block;
+              margin-bottom:8px;
+              color:var(--white);
+            "
+          >
+            DASHBOARD ERROR
+          </strong>
+
+          <p
+            style="
+              color:#697584;
+              font-size:9px;
+              line-height:1.6;
+            "
+          >
+            ${esc(error.message)}
+          </p>
+
+          <button
+            class="btn btn-hot"
+            style="margin-top:12px"
+            data-action="dashboard"
+          >
+            RETRY →
+          </button>
+
+        </div>
+      `;
+    }
   }
 }
+
+/* =========================
+   DASHBOARD
+========================= */
 
 function renderDashboard(data) {
   showOnly("dashboard");
 
-  const firstName =
-    (data.user.name || "OPERATOR")
-      .split(" ")[0]
-      .toUpperCase();
+  const user =
+    data.user || {};
 
-  if ($("#dashName")) {
-    $("#dashName").textContent = firstName;
+  const orders =
+    Array.isArray(data.orders)
+      ? data.orders
+      : [];
+
+  window.__orders = orders;
+
+  const dashName =
+    $("#dashName");
+
+  if (dashName) {
+    dashName.textContent =
+      (
+        user.name ||
+        "OPERATOR"
+      )
+        .split(" ")[0]
+        .toUpperCase();
   }
 
-  if ($("#orderCount")) {
-    $("#orderCount").textContent =
-      data.orders.length;
+  const orderCount =
+    $("#orderCount");
+
+  if (orderCount) {
+    orderCount.textContent =
+      orders.length;
   }
 
-  if ($("#profile")) {
-    $("#profile").innerHTML = `
+  /* PROFILE */
+
+  const profile =
+    $("#profile");
+
+  if (profile) {
+    const completed =
+      orders.filter(
+        (order) =>
+          order.status ===
+          "completed"
+      ).length;
+
+    profile.innerHTML = `
       <div class="profileCard">
 
         <div class="profileOrb"></div>
 
         <div>
+
           <h3>
-            ${esc(data.user.name)}
+            ${esc(
+              user.name ||
+                "Operator"
+            )}
           </h3>
 
           <p>
-            ${esc(data.user.email)}
+            ${esc(
+              user.email ||
+                ""
+            )}
+
             /
+
             CUSTOMER ID
-            ${String(data.user.id).padStart(4, "0")}
+
+            ${String(
+              user.id || ""
+            ).padStart(4, "0")}
           </p>
+
         </div>
 
         <div class="profileStats">
 
           <div>
             <strong>
-              ${data.orders.length}
+              ${orders.length}
             </strong>
-            <span>ORDERS</span>
+
+            <span>
+              ORDERS
+            </span>
           </div>
 
           <div>
             <strong>
-              ${
-                data.orders.filter(
-                  (order) =>
-                    order.status ===
-                    "completed"
-                ).length
-              }
+              ${completed}
             </strong>
-            <span>COMPLETED</span>
+
+            <span>
+              COMPLETED
+            </span>
           </div>
 
           <div>
-            <strong>ONLINE</strong>
-            <span>PROFILE</span>
+            <strong>
+              ONLINE
+            </strong>
+
+            <span>
+              PROFILE
+            </span>
           </div>
 
         </div>
@@ -273,55 +455,158 @@ function renderDashboard(data) {
     `;
   }
 
-  window.__orders = data.orders;
+  /* ORDERS */
 
-  if ($("#orders")) {
-    $("#orders").innerHTML =
-      data.orders.length
-        ? data.orders
-            .map(
-              (order) => `
+  const ordersContainer =
+    $("#orders");
+
+  if (ordersContainer) {
+    if (orders.length === 0) {
+
+      ordersContainer.innerHTML = `
+        <div class="statusBox">
+
+          <p
+            style="
+              color:#697584;
+              font-size:9px;
+              line-height:1.6;
+            "
+          >
+            No orders yet.
+            Choose an operation
+            and launch your first recovery.
+          </p>
+
+          <a
+            class="btn btn-hot"
+            href="#services"
+          >
+            EXPLORE SERVICES →
+          </a>
+
+        </div>
+      `;
+
+    } else {
+
+      ordersContainer.innerHTML =
+        orders
+          .map(
+            (order) =>
+              `
                 <div
                   class="orderRow"
-                  data-order-id="${order.id}"
+                  data-order-id="${esc(
+                    order.id
+                  )}"
                 >
 
                   <div class="orderTop">
 
                     <strong>
-                      #${order.id}
+                      #${esc(order.id)}
                       ·
-                      ${esc(order.service)}
+                      ${esc(
+                        order.service
+                      )}
                     </strong>
 
                     <span class="status">
-                      ${order.status
-                        .toUpperCase()
-                        .replaceAll(
-                          "_",
-                          " "
-                        )}
+                      ${esc(
+                        String(
+                          order.status ||
+                            "received"
+                        )
+                          .toUpperCase()
+                          .replaceAll(
+                            "_",
+                            " "
+                          )
+                      )}
                     </span>
 
                   </div>
 
                   <div class="orderMeta">
-                    ${order.payment_status.toUpperCase()}
+
+                    ${esc(
+                      String(
+                        order.payment_status ||
+                          "unpaid"
+                      ).toUpperCase()
+                    )}
+
                     /
-                    ${esc(order.platform)}
+
+                    ${esc(
+                      order.platform ||
+                        "Unknown"
+                    )}
+
                     /
-                    ${new Date(
-                      order.created_at + "Z"
-                    ).toLocaleDateString()}
+
+                    ${formatDate(
+                      order.created_at
+                    )}
+
                   </div>
+
+                  ${
+                    order.r6_username
+                      ? `
+                        <div class="orderMeta">
+                          R6:
+                          ${esc(
+                            order.r6_username
+                          )}
+                        </div>
+                      `
+                      : ""
+                  }
+
+                  ${
+                    order.discord_username
+                      ? `
+                        <div class="orderMeta">
+                          DISCORD:
+                          ${esc(
+                            order.discord_username
+                          )}
+                        </div>
+                      `
+                      : ""
+                  }
+
+                  ${
+                    order.details
+                      ? `
+                        <div
+                          class="orderMeta"
+                          style="
+                            margin-top:8px;
+                            color:#8d98a6;
+                          "
+                        >
+                          ${esc(
+                            order.details
+                          )}
+                        </div>
+                      `
+                      : ""
+                  }
 
                   ${
                     order.admin_note
                       ? `
                         <div
                           class="orderMeta"
-                          style="color:var(--cyan)"
+                          style="
+                            margin-top:8px;
+                            color:var(--cyan);
+                          "
                         >
+                          ADMIN:
                           ${esc(
                             order.admin_note
                           )}
@@ -332,37 +617,23 @@ function renderDashboard(data) {
 
                 </div>
               `
-            )
-            .join("")
-        : `
-          <div class="statusBox">
-
-            <p
-              style="
-                color:#697584;
-                font-size:9px
-              "
-            >
-              No orders yet.
-              Choose an operation
-              and launch your first recovery.
-            </p>
-
-            <a
-              class="btn btn-hot"
-              href="#services"
-            >
-              EXPLORE SERVICES →
-            </a>
-
-          </div>
-        `;
+          )
+          .join("");
+    }
   }
 
-  const current = data.orders[0];
+  /* STATUS PANEL */
 
-  if ($("#statusPanel")) {
-    $("#statusPanel").innerHTML =
+  const statusPanel =
+    $("#statusPanel");
+
+  if (statusPanel) {
+    const current =
+      orders.length
+        ? orders[0]
+        : null;
+
+    statusPanel.innerHTML =
       current
         ? statusHTML(current)
         : `
@@ -371,7 +642,8 @@ function renderDashboard(data) {
             <p
               style="
                 color:#697584;
-                font-size:9px
+                font-size:9px;
+                line-height:1.6;
               "
             >
               Your next recovery
@@ -384,20 +656,51 @@ function renderDashboard(data) {
 }
 
 /* =========================
+   DATE FORMAT
+========================= */
+
+function formatDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(
+      String(value).endsWith("Z")
+        ? value
+        : value + "Z"
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+  return date.toLocaleDateString();
+}
+
+/* =========================
    ORDER STATUS
 ========================= */
 
 function statusHTML(order) {
-  const index = statuses.indexOf(
-    order.status
-  );
+  const status =
+    order.status || "received";
 
-  if (order.status === "cancelled") {
+  const index =
+    statuses.indexOf(status);
+
+  if (status === "cancelled") {
     return `
       <div class="statusBox">
+
         <div class="stage current">
           ORDER CANCELLED
         </div>
+
       </div>
     `;
   }
@@ -409,7 +712,7 @@ function statusHTML(order) {
 
         ${statuses
           .map(
-            (status, i) => `
+            (statusName, i) => `
               <div
                 class="
                   stage
@@ -422,18 +725,20 @@ function statusHTML(order) {
                   }
                 "
               >
+
                 ${
                   i < index
                     ? "✓ "
                     : ""
                 }
 
-                ${status
+                ${statusName
                   .replace(
                     "_",
                     " "
                   )
                   .toUpperCase()}
+
               </div>
             `
           )
@@ -442,7 +747,8 @@ function statusHTML(order) {
       </div>
 
       ${
-        order.payment_status !== "paid"
+        order.payment_status !==
+        "paid"
           ? `
             <button
               class="btn btn-hot"
@@ -450,7 +756,9 @@ function statusHTML(order) {
                 width:100%;
                 margin-top:18px
               "
-              data-pay="${order.id}"
+              data-pay="${esc(
+                order.id
+              )}"
             >
               PAY ORDER →
             </button>
@@ -462,23 +770,42 @@ function statusHTML(order) {
         style="
           margin-top:16px;
           font:500 7px DM Mono;
-          color:#596675
+          color:#596675;
         "
       >
-        ORDER #${order.id}
+        ORDER #${esc(order.id)}
         /
         UPDATED
-        ${
+        ${formatDateTime(
           order.updated_at
-            ? new Date(
-                order.updated_at + "Z"
-              ).toLocaleString()
-            : "—"
-        }
+        )}
       </div>
 
     </div>
   `;
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(
+      String(value).endsWith("Z")
+        ? value
+        : value + "Z"
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+  return date.toLocaleString();
 }
 
 /* =========================
@@ -499,7 +826,9 @@ function logout() {
 
   location.hash = "home";
 
-  toast("Signed out.");
+  toast(
+    "Signed out."
+  );
 }
 
 /* =========================
@@ -508,40 +837,64 @@ function logout() {
 
 async function login() {
   try {
-    const data = await api(
-      "/auth/login",
-      {
-        method: "POST",
+    const email =
+      $("#loginEmail")?.value
+        ?.trim() || "";
 
-        body: JSON.stringify({
-          email: $(
-            "#loginEmail"
-          ).value,
+    const password =
+      $("#loginPassword")?.value ||
+      "";
 
-          password: $(
-            "#loginPassword"
-          ).value
-        })
-      }
-    );
+    if (!email || !password) {
+      toast(
+        "Enter your email and password.",
+        true
+      );
+
+      return;
+    }
+
+    const data =
+      await api(
+        "/auth/login",
+        {
+          method: "POST",
+
+          body: JSON.stringify({
+            email,
+            password
+          })
+        }
+      );
 
     token = data.token;
+
+    me = data.user;
 
     localStorage.setItem(
       "r6_token",
       token
     );
 
-    me = data.user;
+    toast(
+      "Access granted."
+    );
 
-    toast("Access granted.");
-
-    if (me.role === "admin") {
-      loadAdmin();
+    if (
+      me?.role ===
+      "admin"
+    ) {
+      await loadAdmin();
     } else {
-      loadMe();
+      await loadMe();
     }
+
   } catch (error) {
+    console.error(
+      "Login error:",
+      error
+    );
+
     toast(
       error.message,
       true
@@ -555,40 +908,53 @@ async function login() {
 
 async function register() {
   try {
-    const data = await api(
-      "/auth/register",
-      {
-        method: "POST",
+    const name =
+      $("#regName")?.value
+        ?.trim() || "";
 
-        body: JSON.stringify({
-          name: $(
-            "#regName"
-          ).value,
+    const email =
+      $("#regEmail")?.value
+        ?.trim() || "";
 
-          email: $(
-            "#regEmail"
-          ).value,
+    const password =
+      $("#regPassword")?.value ||
+      "";
 
-          password: $(
-            "#regPassword"
-          ).value
-        })
-      }
-    );
+    const data =
+      await api(
+        "/auth/register",
+        {
+          method: "POST",
+
+          body: JSON.stringify({
+            name,
+            email,
+            password
+          })
+        }
+      );
 
     token = data.token;
+
+    me = data.user;
 
     localStorage.setItem(
       "r6_token",
       token
     );
 
-    me = data.user;
+    toast(
+      "Profile created."
+    );
 
-    toast("Profile created.");
+    await loadMe();
 
-    loadMe();
   } catch (error) {
+    console.error(
+      "Registration error:",
+      error
+    );
+
     toast(
       error.message,
       true
@@ -614,11 +980,13 @@ function createOrder(service) {
 
   $("#orderModal")?.remove();
 
-  const modal = document.createElement(
-    "div"
-  );
+  const modal =
+    document.createElement(
+      "div"
+    );
 
-  modal.id = "orderModal";
+  modal.id =
+    "orderModal";
 
   modal.innerHTML = `
     <div class="modalBack">
@@ -690,6 +1058,7 @@ function createOrder(service) {
             margin-top:10px;
           "
         >
+
           <input
             id="oTerms"
             type="checkbox"
@@ -706,6 +1075,7 @@ function createOrder(service) {
             "
           >
             I agree to the
+
             <a
               href="/terms.html"
               target="_blank"
@@ -717,7 +1087,9 @@ function createOrder(service) {
             >
               Terms of Service
             </a>
+
             and
+
             <a
               href="/privacy.html"
               target="_blank"
@@ -729,7 +1101,9 @@ function createOrder(service) {
             >
               Privacy Policy
             </a>.
+
           </span>
+
         </label>
 
         <button
@@ -751,9 +1125,8 @@ function createOrder(service) {
 
   modal.querySelector(
     ".close"
-  ).onclick = () => {
+  ).onclick = () =>
     modal.remove();
-  };
 
   modal.querySelector(
     ".modalBack"
@@ -770,13 +1143,14 @@ function createOrder(service) {
   $("#createOrder").onclick =
     async () => {
       try {
-        const details = $(
-          "#oDetails"
-        ).value.trim();
+        const details =
+          $("#oDetails")
+            ?.value
+            ?.trim() || "";
 
-        const terms = $(
-          "#oTerms"
-        ).checked;
+        const accepted =
+          $("#oTerms")
+            ?.checked;
 
         if (!details) {
           toast(
@@ -787,7 +1161,7 @@ function createOrder(service) {
           return;
         }
 
-        if (!terms) {
+        if (!accepted) {
           toast(
             "Please agree to the Terms of Service and Privacy Policy.",
             true
@@ -796,30 +1170,33 @@ function createOrder(service) {
           return;
         }
 
-        const data = await api(
-          "/orders",
-          {
-            method: "POST",
+        const data =
+          await api(
+            "/orders",
+            {
+              method: "POST",
 
-            body: JSON.stringify({
-              service,
+              body: JSON.stringify({
+                service,
 
-              platform: $(
-                "#oPlatform"
-              ).value,
+                platform:
+                  $("#oPlatform")
+                    .value,
 
-              r6_username: $(
-                "#oR6"
-              ).value,
+                r6_username:
+                  $("#oR6")
+                    .value
+                    .trim(),
 
-              discord_username: $(
-                "#oDiscord"
-              ).value,
+                discord_username:
+                  $("#oDiscord")
+                    .value
+                    .trim(),
 
-              details
-            })
-          }
-        );
+                details
+              })
+            }
+          );
 
         modal.remove();
 
@@ -831,7 +1208,13 @@ function createOrder(service) {
 
         location.hash =
           "dashboard";
+
       } catch (error) {
+        console.error(
+          "Order creation error:",
+          error
+        );
+
         toast(
           error.message,
           true
@@ -841,7 +1224,7 @@ function createOrder(service) {
 }
 
 /* =========================
-   STRIPE PAYMENT
+   STRIPE CHECKOUT
 ========================= */
 
 async function pay(id) {
@@ -850,16 +1233,18 @@ async function pay(id) {
       "Creating secure checkout..."
     );
 
-    const data = await api(
-      "/payments/checkout",
-      {
-        method: "POST",
+    const data =
+      await api(
+        "/payments/checkout",
+        {
+          method: "POST",
 
-        body: JSON.stringify({
-          order_id: Number(id)
-        })
-      }
-    );
+          body: JSON.stringify({
+            order_id:
+              Number(id)
+          })
+        }
+      );
 
     if (data.demo) {
       toast(
@@ -879,7 +1264,13 @@ async function pay(id) {
 
     window.location.href =
       data.url;
+
   } catch (error) {
+    console.error(
+      "Payment error:",
+      error
+    );
+
     toast(
       error.message,
       true
@@ -898,152 +1289,190 @@ async function loadAdmin() {
   }
 
   try {
-    const stats = await api(
-      "/admin/stats"
-    );
+    const stats =
+      await api(
+        "/admin/stats"
+      );
 
-    const data = await api(
-      "/admin/orders"
-    );
+    const data =
+      await api(
+        "/admin/orders"
+      );
 
     showOnly("admin");
 
-    if ($("#adminStats")) {
-      $("#adminStats").innerHTML = [
+    const adminStats =
+      $("#adminStats");
+
+    if (adminStats) {
+      adminStats.innerHTML = [
         [
-          "" + stats.total,
+          stats.total,
           "TOTAL ORDERS"
         ],
         [
-          "" + stats.active,
+          stats.active,
           "ACTIVE OPERATIONS"
         ],
         [
-          "" + stats.paid,
+          stats.paid,
           "PAID"
         ],
         [
-          "" + stats.customers,
+          stats.customers,
           "CUSTOMERS"
         ]
       ]
         .map(
-          (item) => `
-            <div class="adminStat">
+          ([number, label]) =>
+            `
+              <div class="adminStat">
 
-              <strong>
-                ${esc(item[0])}
-              </strong>
+                <strong>
+                  ${esc(number)}
+                </strong>
 
-              <span>
-                ${esc(item[1])}
-              </span>
+                <span>
+                  ${esc(label)}
+                </span>
 
-            </div>
-          `
+              </div>
+            `
         )
         .join("");
     }
 
-    if ($("#adminOrders")) {
-      $("#adminOrders").innerHTML =
-        data.orders.length
-          ? data.orders
-              .map(
-                (order) => `
-                  <div class="adminItem">
+    const adminOrders =
+      $("#adminOrders");
 
-                    <div>
-                      <strong>
-                        #${order.id}
-                        ·
-                        ${esc(
-                          order.service
-                        )}
-                      </strong>
-
-                      <small>
-                        ${esc(
-                          order.customer_name
-                        )}
-                        /
-                        ${esc(
-                          order.customer_email
-                        )}
-                      </small>
-                    </div>
-
-                    <div>
-                      <strong>
-                        ${esc(
-                          order.platform
-                        )}
-                      </strong>
-
-                      <small>
-                        ${esc(
-                          order.r6_username ||
-                            "No R6 username"
-                        )}
-                      </small>
-                    </div>
-
-                    <select
-                      data-status="${order.id}"
-                    >
-                      ${[
-                        "received",
-                        "paid",
-                        "reviewing",
-                        "in_progress",
-                        "ready",
-                        "completed",
-                        "cancelled"
-                      ]
-                        .map(
-                          (status) => `
-                            <option
-                              ${
-                                status ===
-                                order.status
-                                  ? "selected"
-                                  : ""
-                              }
-                            >
-                              ${status}
-                            </option>
-                          `
-                        )
-                        .join("")}
-                    </select>
-
-                    <input
-                      data-note="${order.id}"
-                      value="${esc(
-                        order.admin_note || ""
-                      )}"
-                      placeholder="Internal note"
-                    >
-
-                    <button
-                      class="btn btn-small"
-                      data-save="${order.id}"
-                      type="button"
-                    >
-                      SAVE
-                    </button>
-
-                  </div>
-                `
-              )
-              .join("")
-          : `
-            <div class="statusBox">
-              No orders.
-            </div>
-          `;
+    if (!adminOrders) {
+      return;
     }
+
+    if (
+      !data.orders ||
+      data.orders.length === 0
+    ) {
+      adminOrders.innerHTML = `
+        <div class="statusBox">
+          No orders.
+        </div>
+      `;
+
+      return;
+    }
+
+    adminOrders.innerHTML =
+      data.orders
+        .map(
+          (order) =>
+            `
+              <div class="adminItem">
+
+                <div>
+                  <strong>
+                    #${esc(order.id)}
+                    ·
+                    ${esc(
+                      order.service
+                    )}
+                  </strong>
+
+                  <small>
+                    ${esc(
+                      order.customer_name ||
+                        ""
+                    )}
+                    /
+                    ${esc(
+                      order.customer_email ||
+                        ""
+                    )}
+                  </small>
+                </div>
+
+                <div>
+                  <strong>
+                    ${esc(
+                      order.platform
+                    )}
+                  </strong>
+
+                  <small>
+                    ${esc(
+                      order.r6_username ||
+                        "No R6 username"
+                    )}
+                  </small>
+                </div>
+
+                <select
+                  data-status="${esc(
+                    order.id
+                  )}"
+                >
+
+                  ${[
+                    "received",
+                    "paid",
+                    "reviewing",
+                    "in_progress",
+                    "ready",
+                    "completed",
+                    "cancelled"
+                  ]
+                    .map(
+                      (status) =>
+                        `
+                          <option
+                            value="${status}"
+                            ${
+                              status ===
+                              order.status
+                                ? "selected"
+                                : ""
+                            }
+                          >
+                            ${status}
+                          </option>
+                        `
+                    )
+                    .join("")}
+
+                </select>
+
+                <input
+                  data-note="${esc(
+                    order.id
+                  )}"
+                  value="${esc(
+                    order.admin_note ||
+                      ""
+                  )}"
+                  placeholder="Internal note"
+                >
+
+                <button
+                  class="btn btn-small"
+                  data-save="${esc(
+                    order.id
+                  )}"
+                  type="button"
+                >
+                  SAVE
+                </button>
+
+              </div>
+            `
+        )
+        .join("");
+
   } catch (error) {
+    console.error(
+      "Admin loading error:",
+      error
+    );
+
     toast(
       error.message,
       true
@@ -1054,16 +1483,22 @@ async function loadAdmin() {
 async function saveAdmin(id) {
   try {
     const statusElement =
-      $(`[data-status="${id}"]`);
+      $(
+        `[data-status="${id}"]`
+      );
 
     const noteElement =
-      $(`[data-note="${id}"]`);
+      $(
+        `[data-note="${id}"]`
+      );
 
     const status =
-      statusElement?.value || "";
+      statusElement?.value ||
+      "received";
 
     const note =
-      noteElement?.value || "";
+      noteElement?.value ||
+      "";
 
     await api(
       `/admin/orders/${id}`,
@@ -1081,37 +1516,19 @@ async function saveAdmin(id) {
       `Order #${id} updated.`
     );
 
-    loadAdmin();
+    await loadAdmin();
+
   } catch (error) {
+    console.error(
+      "Admin save error:",
+      error
+    );
+
     toast(
       error.message,
       true
     );
   }
-}
-
-/* =========================
-   CATALOG TABS
-========================= */
-
-function selectCatalogTab(tab) {
-  $$(".catalogTab").forEach(
-    (button) => {
-      button.classList.toggle(
-        "active",
-        button.dataset.tab === tab
-      );
-    }
-  );
-
-  $$(".catalogPanel").forEach(
-    (panel) => {
-      panel.classList.toggle(
-        "active",
-        panel.dataset.panel === tab
-      );
-    }
-  );
 }
 
 /* =========================
@@ -1121,8 +1538,6 @@ function selectCatalogTab(tab) {
 document.addEventListener(
   "click",
   (event) => {
-
-    /* Main actions */
 
     const actionElement =
       event.target.closest(
@@ -1134,110 +1549,99 @@ document.addEventListener(
 
     if (action === "login") {
       showAuth("login");
+      return;
     }
 
     if (action === "dashboard") {
-      if (me?.role === "admin") {
+      if (
+        me?.role === "admin"
+      ) {
         loadAdmin();
       } else {
         loadMe();
       }
+
+      return;
     }
 
     if (action === "logout") {
       logout();
+      return;
     }
 
-    /* Service ordering */
-
-    const serviceButton =
+    const serviceElement =
       event.target.closest(
         "[data-order]"
       );
 
-    if (serviceButton) {
+    if (serviceElement) {
       createOrder(
-        serviceButton.dataset.order
+        serviceElement.dataset.order
       );
+
+      return;
     }
 
-    /* Payment */
-
-    const payButton =
+    const payElement =
       event.target.closest(
         "[data-pay]"
       );
 
-    if (payButton) {
+    if (payElement) {
       pay(
-        payButton.dataset.pay
+        payElement.dataset.pay
       );
+
+      return;
     }
 
-    /* Login/register switching */
-
-    const switchButton =
+    const switchElement =
       event.target.closest(
         "[data-switch]"
       );
 
-    if (switchButton) {
+    if (switchElement) {
       showAuth(
-        switchButton.dataset.switch
+        switchElement.dataset.switch
       );
+
+      return;
     }
 
-    /* Form submissions */
-
-    const submitButton =
+    const submitElement =
       event.target.closest(
         "[data-submit]"
       );
 
-    if (submitButton) {
-      const submitType =
-        submitButton.dataset.submit;
+    if (submitElement) {
+      const type =
+        submitElement.dataset.submit;
 
-      if (
-        submitType === "login"
-      ) {
+      if (type === "login") {
         login();
       }
 
       if (
-        submitType === "register"
+        type === "register"
       ) {
         register();
       }
+
+      return;
     }
 
-    /* Admin save */
-
-    const saveButton =
+    const saveElement =
       event.target.closest(
         "[data-save]"
       );
 
-    if (saveButton) {
+    if (saveElement) {
       saveAdmin(
-        saveButton.dataset.save
+        saveElement.dataset.save
       );
+
+      return;
     }
-
-    /* Catalog tabs */
-
-    const tabButton =
-      event.target.closest(
-        "[data-tab]"
-      );
-
-    if (tabButton) {
-      selectCatalogTab(
-        tabButton.dataset.tab
-      );
-    }
-
-    /* Order selection */
 
     const orderElement =
       event.target.closest(
@@ -1245,16 +1649,20 @@ document.addEventListener(
       );
 
     if (orderElement) {
-      const orderId =
-        orderElement.dataset.orderId;
+      const id =
+        String(
+          orderElement.dataset.orderId
+        );
 
-      const order = (
-        window.__orders || []
-      ).find(
-        (item) =>
-          String(item.id) ===
-          String(orderId)
-      );
+      const order =
+        (
+          window.__orders ||
+          []
+        ).find(
+          (item) =>
+            String(item.id) ===
+            id
+        );
 
       if (
         order &&
@@ -1271,8 +1679,11 @@ document.addEventListener(
    ADMIN REFRESH
 ========================= */
 
-if ($("#refreshAdmin")) {
-  $("#refreshAdmin").onclick =
+const refreshAdmin =
+  $("#refreshAdmin");
+
+if (refreshAdmin) {
+  refreshAdmin.onclick =
     loadAdmin;
 }
 
@@ -1283,13 +1694,13 @@ if ($("#refreshAdmin")) {
 window.addEventListener(
   "hashchange",
   () => {
-    const hash =
-      location.hash;
-
     if (
-      hash === "#dashboard"
+      location.hash ===
+      "#dashboard"
     ) {
-      if (me?.role === "admin") {
+      if (
+        me?.role === "admin"
+      ) {
         loadAdmin();
       } else {
         loadMe();
@@ -1297,7 +1708,8 @@ window.addEventListener(
     }
 
     if (
-      hash === "#auth"
+      location.hash ===
+      "#auth"
     ) {
       showAuth("login");
     }
@@ -1305,51 +1717,47 @@ window.addEventListener(
 );
 
 /* =========================
-   PAYMENT RETURN HANDLING
+   PAYMENT RETURN
 ========================= */
 
 function handlePaymentReturn() {
   const params =
     new URLSearchParams(
-      location.search
+      window.location.search
     );
 
   const payment =
     params.get("payment");
 
-  if (payment === "success") {
+  if (
+    payment === "success"
+  ) {
     toast(
       "Payment completed successfully."
     );
-
-    params.delete("payment");
-
-    const cleanUrl =
-      location.pathname +
-      (params.toString()
-        ? "?" + params.toString()
-        : "") +
-      "#dashboard";
-
-    window.history.replaceState(
-      {},
-      document.title,
-      cleanUrl
-    );
   }
 
-  if (payment === "cancelled") {
+  if (
+    payment === "cancelled"
+  ) {
     toast(
       "Payment cancelled.",
       true
     );
+  }
 
-    params.delete("payment");
+  if (payment) {
+    params.delete(
+      "payment"
+    );
+
+    const query =
+      params.toString();
 
     const cleanUrl =
-      location.pathname +
-      (params.toString()
-        ? "?" + params.toString()
+      window.location.pathname +
+      (query
+        ? "?" + query
         : "") +
       "#dashboard";
 
@@ -1362,9 +1770,14 @@ function handlePaymentReturn() {
 }
 
 /* =========================
-   START
+   START APPLICATION
 ========================= */
 
 handlePaymentReturn();
 
-loadMe();
+if (token) {
+  loadMe();
+} else {
+  nav();
+}
+```
