@@ -23,13 +23,16 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-only-change-me";
 const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
 
 if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL is missing. Add your Neon connection string to Render.");
+  console.error(
+    "DATABASE_URL is missing. Add your Neon connection string to Render."
+  );
   process.exit(1);
 }
 
 /*
   NEON / POSTGRESQL
 */
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -40,6 +43,7 @@ const pool = new Pool({
 /*
   DATABASE SETUP
 */
+
 async function initDatabase() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -77,6 +81,27 @@ async function initDatabase() {
       uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(order_id) REFERENCES orders(id)
     );
+
+    /*
+      IMPORTANT:
+      These ALTER statements make sure an existing orders table
+      gets the newer columns too.
+    */
+
+    ALTER TABLE orders
+      ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;
+
+    ALTER TABLE orders
+      ADD COLUMN IF NOT EXISTS admin_note TEXT;
+
+    ALTER TABLE orders
+      ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'unpaid';
+
+    ALTER TABLE orders
+      ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'received';
+
+    ALTER TABLE orders
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
   `);
 
   console.log("Neon database initialized.");
@@ -85,6 +110,7 @@ async function initDatabase() {
 /*
   ADMIN SEED
 */
+
 async function seedAdmin() {
   const email = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD || "";
@@ -104,7 +130,12 @@ async function seedAdmin() {
       INSERT INTO users (name, email, password_hash, role)
       VALUES ($1, $2, $3, $4)
       `,
-      ["R6 Recoveries Admin", email, hash, "admin"]
+      [
+        "R6 Recoveries Admin",
+        email,
+        hash,
+        "admin"
+      ]
     );
 
     console.log(`Seeded admin account: ${email}`);
@@ -114,6 +145,7 @@ async function seedAdmin() {
 /*
   DATABASE HELPERS
 */
+
 async function dbGet(sql, params = []) {
   const result = await pool.query(sql, params);
   return result.rows[0] || null;
@@ -127,8 +159,12 @@ async function dbAll(sql, params = []) {
 /*
   UPLOADS
 */
+
 const uploadDir = path.join(__dirname, "uploads");
-fs.mkdirSync(uploadDir, { recursive: true });
+
+fs.mkdirSync(uploadDir, {
+  recursive: true
+});
 
 const upload = multer({
   dest: uploadDir,
@@ -140,43 +176,58 @@ const upload = multer({
 /*
   MIDDLEWARE
 */
-app.use(helmet({
-  crossOriginResourcePolicy: false
-}));
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false
+  })
+);
 
 app.use(morgan("tiny"));
 
-app.use(express.json({
-  limit: "1mb",
-  verify: (req, res, buf) => {
-    if (req.originalUrl === "/api/payments/webhook") {
-      req.rawBody = Buffer.from(buf);
-    }
-  }
-}));
+/*
+  Preserve the raw Stripe webhook body.
+*/
 
-app.use(express.urlencoded({
-  extended: true
-}));
+app.use(
+  express.json({
+    limit: "1mb",
+    verify: (req, res, buf) => {
+      if (req.originalUrl === "/api/payments/webhook") {
+        req.rawBody = Buffer.from(buf);
+      }
+    }
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+);
 
 app.use(express.static(path.join(__dirname, "public")));
 
 /*
   SERVICES
 */
+
 const SERVICES = {
   settings: {
     name: "R6 Settings Recovery",
     price: 1000
   },
+
   fps: {
     name: "FPS Optimization",
     price: 1500
   },
+
   full: {
     name: "Full PC + R6 Recovery",
     price: 2500
   },
+
   vod: {
     name: "R6 VOD Review",
     price: 1000
@@ -186,6 +237,7 @@ const SERVICES = {
 /*
   AUTH
 */
+
 function signUser(user) {
   return jwt.sign(
     {
@@ -204,6 +256,7 @@ function signUser(user) {
 function auth(req, res, next) {
   try {
     const raw = req.headers.authorization || "";
+
     const token = raw.startsWith("Bearer ")
       ? raw.slice(7)
       : "";
@@ -215,6 +268,7 @@ function auth(req, res, next) {
     }
 
     req.user = jwt.verify(token, JWT_SECRET);
+
     next();
   } catch {
     res.status(401).json({
@@ -236,6 +290,7 @@ function admin(req, res, next) {
 /*
   SAFE USER RESPONSE
 */
+
 function safeUser(user) {
   return {
     id: user.id,
@@ -250,6 +305,7 @@ function safeUser(user) {
 /*
   PUBLIC ORDER RESPONSE
 */
+
 function publicOrder(row) {
   return {
     id: row.id,
@@ -269,10 +325,14 @@ function publicOrder(row) {
 /*
   REGISTER
 */
+
 app.post("/api/auth/register", async (req, res) => {
   try {
     const name = String(req.body.name || "").trim();
-    const email = String(req.body.email || "").trim().toLowerCase();
+    const email = String(req.body.email || "")
+      .trim()
+      .toLowerCase();
+
     const password = String(req.body.password || "");
 
     if (
@@ -281,7 +341,8 @@ app.post("/api/auth/register", async (req, res) => {
       password.length < 8
     ) {
       return res.status(400).json({
-        error: "Use a name, valid email, and password of at least 8 characters."
+        error:
+          "Use a name, valid email, and password of at least 8 characters."
       });
     }
 
@@ -289,11 +350,19 @@ app.post("/api/auth/register", async (req, res) => {
 
     const result = await pool.query(
       `
-      INSERT INTO users (name, email, password_hash)
+      INSERT INTO users (
+        name,
+        email,
+        password_hash
+      )
       VALUES ($1, $2, $3)
       RETURNING *
       `,
-      [name, email, hash]
+      [
+        name,
+        email,
+        hash
+      ]
     );
 
     const user = result.rows[0];
@@ -303,19 +372,24 @@ app.post("/api/auth/register", async (req, res) => {
       user: safeUser(user)
     });
   } catch (e) {
-    console.error("Registration error:", e);
+    console.error(
+      "Registration error:",
+      e
+    );
 
     if (
       e.code === "23505" ||
       String(e.message).includes("duplicate key")
     ) {
       return res.status(409).json({
-        error: "An account with that email already exists."
+        error:
+          "An account with that email already exists."
       });
     }
 
     res.status(500).json({
-      error: "Could not create account."
+      error:
+        "Could not create account."
     });
   }
 });
@@ -323,6 +397,7 @@ app.post("/api/auth/register", async (req, res) => {
 /*
   LOGIN
 */
+
 app.post("/api/auth/login", async (req, res) => {
   try {
     const email = String(req.body.email || "")
@@ -338,10 +413,14 @@ app.post("/api/auth/login", async (req, res) => {
 
     if (
       !user ||
-      !(await bcrypt.compare(password, user.password_hash))
+      !(await bcrypt.compare(
+        password,
+        user.password_hash
+      ))
     ) {
       return res.status(401).json({
-        error: "Invalid email or password."
+        error:
+          "Invalid email or password."
       });
     }
 
@@ -350,10 +429,14 @@ app.post("/api/auth/login", async (req, res) => {
       user: safeUser(user)
     });
   } catch (e) {
-    console.error("Login error:", e);
+    console.error(
+      "Login error:",
+      e
+    );
 
     res.status(500).json({
-      error: "Could not log in."
+      error:
+        "Could not log in."
     });
   }
 });
@@ -361,6 +444,7 @@ app.post("/api/auth/login", async (req, res) => {
 /*
   CURRENT USER + ORDERS
 */
+
 app.get("/api/me", auth, async (req, res) => {
   try {
     const user = await dbGet(
@@ -370,7 +454,8 @@ app.get("/api/me", auth, async (req, res) => {
 
     if (!user) {
       return res.status(404).json({
-        error: "Account not found."
+        error:
+          "Account not found."
       });
     }
 
@@ -389,10 +474,14 @@ app.get("/api/me", auth, async (req, res) => {
       orders: orders.map(publicOrder)
     });
   } catch (e) {
-    console.error("Get user error:", e);
+    console.error(
+      "Get user error:",
+      e
+    );
 
     res.status(500).json({
-      error: "Could not load account."
+      error:
+        "Could not load account."
     });
   }
 });
@@ -400,6 +489,7 @@ app.get("/api/me", auth, async (req, res) => {
 /*
   CREATE ORDER
 */
+
 app.post("/api/orders", auth, async (req, res) => {
   try {
     const {
@@ -416,7 +506,8 @@ app.post("/api/orders", auth, async (req, res) => {
       !String(details || "").trim()
     ) {
       return res.status(400).json({
-        error: "Choose a service/platform and describe what you need."
+        error:
+          "Choose a service/platform and describe what you need."
       });
     }
 
@@ -448,22 +539,33 @@ app.post("/api/orders", auth, async (req, res) => {
     /*
       FORMSPREE
     */
+
     try {
-      await fetch("https://formspree.io/f/xaeyazlr", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          service: SERVICES[service].name,
-          platform,
-          r6_username: r6_username || "",
-          discord_username: discord_username || "",
-          details: details.trim(),
-          order_id: order.id
-        })
-      });
+      await fetch(
+        "https://formspree.io/f/xaeyazlr",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+            "Accept":
+              "application/json"
+          },
+          body: JSON.stringify({
+            service:
+              SERVICES[service].name,
+            platform,
+            r6_username:
+              r6_username || "",
+            discord_username:
+              discord_username || "",
+            details:
+              details.trim(),
+            order_id:
+              order.id
+          })
+        }
+      );
     } catch (e) {
       console.error(
         "Formspree notification failed:",
@@ -474,52 +576,84 @@ app.post("/api/orders", auth, async (req, res) => {
     /*
       DISCORD
     */
+
     if (process.env.DISCORD_WEBHOOK_URL) {
       try {
-        await fetch(process.env.DISCORD_WEBHOOK_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            embeds: [
-              {
-                title: "🚨 NEW RECOVERY ORDER",
-                description: "A new operation has been submitted.",
-                fields: [
-                  {
-                    name: "Service",
-                    value: SERVICES[service].name,
-                    inline: false
-                  },
-                  {
-                    name: "Platform",
-                    value: platform,
-                    inline: true
-                  },
-                  {
-                    name: "R6 Username",
-                    value: r6_username || "Not provided",
-                    inline: true
-                  },
-                  {
-                    name: "Discord",
-                    value: discord_username || "Not provided",
-                    inline: true
-                  },
-                  {
-                    name: "Details",
-                    value: details.trim().slice(0, 1024),
-                    inline: false
+        await fetch(
+          process.env.DISCORD_WEBHOOK_URL,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            body: JSON.stringify({
+              embeds: [
+                {
+                  title:
+                    "🚨 NEW RECOVERY ORDER",
+
+                  description:
+                    "A new operation has been submitted.",
+
+                  fields: [
+                    {
+                      name:
+                        "Service",
+                      value:
+                        SERVICES[service].name,
+                      inline: false
+                    },
+
+                    {
+                      name:
+                        "Platform",
+                      value:
+                        platform,
+                      inline: true
+                    },
+
+                    {
+                      name:
+                        "R6 Username",
+                      value:
+                        r6_username ||
+                        "Not provided",
+                      inline: true
+                    },
+
+                    {
+                      name:
+                        "Discord",
+                      value:
+                        discord_username ||
+                        "Not provided",
+                      inline: true
+                    },
+
+                    {
+                      name:
+                        "Details",
+                      value:
+                        details
+                          .trim()
+                          .slice(
+                            0,
+                            1024
+                          ),
+                      inline: false
+                    }
+                  ],
+
+                  footer: {
+                    text:
+                      `R6 Recoveries • Order #${order.id}`
                   }
-                ],
-                footer: {
-                  text: `R6 Recoveries • Order #${order.id}`
                 }
-              }
-            ]
-          })
-        });
+              ]
+            })
+          }
+        );
       } catch (e) {
         console.error(
           "Discord notification failed:",
@@ -529,16 +663,24 @@ app.post("/api/orders", auth, async (req, res) => {
     }
 
     res.status(201).json({
-      order: publicOrder(order),
-      payment_available: Boolean(
-        process.env.STRIPE_SECRET_KEY
-      )
+      order:
+        publicOrder(order),
+
+      payment_available:
+        Boolean(
+          process.env
+            .STRIPE_SECRET_KEY
+        )
     });
   } catch (e) {
-    console.error("Create order error:", e);
+    console.error(
+      "Create order error:",
+      e
+    );
 
     res.status(500).json({
-      error: "Could not create order."
+      error:
+        "Could not create order."
     });
   }
 });
@@ -546,164 +688,234 @@ app.post("/api/orders", auth, async (req, res) => {
 /*
   STRIPE CHECKOUT
 */
-app.post("/api/payments/checkout", auth, async (req, res) => {
-  try {
-    const orderId = Number(req.body.order_id);
 
-    const order = await dbGet(
-      `
-      SELECT *
-      FROM orders
-      WHERE id = $1
-        AND user_id = $2
-      `,
-      [orderId, req.user.id]
-    );
+app.post(
+  "/api/payments/checkout",
+  auth,
+  async (req, res) => {
+    try {
+      const orderId =
+        Number(
+          req.body.order_id
+        );
 
-    if (!order) {
-      return res.status(404).json({
-        error: "Order not found."
-      });
-    }
+      const order =
+        await dbGet(
+          `
+          SELECT *
+          FROM orders
+          WHERE id = $1
+            AND user_id = $2
+          `,
+          [
+            orderId,
+            req.user.id
+          ]
+        );
 
-    if (order.payment_status === "paid") {
-      return res.json({
-        url: `${PUBLIC_URL}/#dashboard`
-      });
-    }
+      if (!order) {
+        return res.status(404).json({
+          error:
+            "Order not found."
+        });
+      }
 
-    const service = Object.values(SERVICES).find(
-      s => s.name === order.service
-    );
+      if (
+        order.payment_status ===
+        "paid"
+      ) {
+        return res.json({
+          url:
+            `${PUBLIC_URL}/#dashboard`
+        });
+      }
 
-    if (!service) {
-      return res.status(400).json({
-        error: "Unknown service."
-      });
-    }
+      const service =
+        Object.values(
+          SERVICES
+        ).find(
+          s =>
+            s.name ===
+            order.service
+        );
 
-    /*
-      DEMO MODE IF STRIPE IS NOT CONFIGURED
-    */
-    if (!process.env.STRIPE_SECRET_KEY) {
+      if (!service) {
+        return res.status(400).json({
+          error:
+            "Unknown service."
+        });
+      }
+
+      /*
+        DEMO MODE IF STRIPE IS NOT CONFIGURED
+      */
+
+      if (
+        !process.env
+          .STRIPE_SECRET_KEY
+      ) {
+        await pool.query(
+          `
+          UPDATE orders
+          SET
+            payment_status = 'paid',
+            status = CASE
+              WHEN status = 'received'
+              THEN 'paid'
+              ELSE status
+            END,
+            updated_at =
+              CURRENT_TIMESTAMP
+          WHERE id = $1
+          `,
+          [order.id]
+        );
+
+        return res.json({
+          demo: true,
+          url:
+            `${PUBLIC_URL}/#dashboard`
+        });
+      }
+
+      const stripe =
+        new Stripe(
+          process.env
+            .STRIPE_SECRET_KEY
+        );
+
+      const session =
+        await stripe.checkout.sessions.create(
+          {
+            mode:
+              "payment",
+
+            line_items: [
+              {
+                price_data: {
+                  currency:
+                    "usd",
+
+                  product_data: {
+                    name:
+                      order.service,
+
+                    description:
+                      `R6 Recoveries order #${order.id}`
+                  },
+
+                  unit_amount:
+                    service.price
+                },
+
+                quantity: 1
+              }
+            ],
+
+            metadata: {
+              order_id:
+                String(order.id)
+            },
+
+            customer_email:
+              req.user.email,
+
+            success_url:
+              `${PUBLIC_URL}/?payment=success#dashboard`,
+
+            cancel_url:
+              `${PUBLIC_URL}/?payment=cancelled#dashboard`
+          }
+        );
+
       await pool.query(
         `
         UPDATE orders
         SET
-          payment_status = 'paid',
-          status = CASE
-            WHEN status = 'received' THEN 'paid'
-            ELSE status
-          END,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $1
+          stripe_session_id = $1,
+          updated_at =
+            CURRENT_TIMESTAMP
+        WHERE id = $2
         `,
-        [order.id]
+        [
+          session.id,
+          order.id
+        ]
       );
 
-      return res.json({
-        demo: true,
-        url: `${PUBLIC_URL}/#dashboard`
+      res.json({
+        url:
+          session.url
+      });
+    } catch (e) {
+      console.error(
+        "Stripe checkout error:",
+        e
+      );
+
+      res.status(500).json({
+        error:
+          e.message ||
+          "Stripe checkout could not be created."
       });
     }
-
-    const stripe = new Stripe(
-      process.env.STRIPE_SECRET_KEY
-    );
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: order.service,
-              description: `R6 Recoveries order #${order.id}`
-            },
-            unit_amount: service.price
-          },
-          quantity: 1
-        }
-      ],
-
-      metadata: {
-        order_id: String(order.id)
-      },
-
-      customer_email: req.user.email,
-
-      success_url:
-        `${PUBLIC_URL}/?payment=success#dashboard`,
-
-      cancel_url:
-        `${PUBLIC_URL}/?payment=cancelled#dashboard`
-    });
-
-    await pool.query(
-      `
-      UPDATE orders
-      SET
-        stripe_session_id = $1,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $2
-      `,
-      [session.id, order.id]
-    );
-
-    res.json({
-      url: session.url
-    });
-  } catch (e) {
-    console.error(
-      "Stripe checkout error:",
-      e
-    );
-
-    res.status(500).json({
-      error:
-        e.message ||
-        "Stripe checkout could not be created."
-    });
   }
-});
+);
 
 /*
   STRIPE WEBHOOK
 */
+
 app.post(
   "/api/payments/webhook",
   express.raw({
-    type: "application/json"
+    type:
+      "application/json"
   }),
   async (req, res) => {
     if (
-      !process.env.STRIPE_SECRET_KEY ||
-      !process.env.STRIPE_WEBHOOK_SECRET
+      !process.env
+        .STRIPE_SECRET_KEY ||
+      !process.env
+        .STRIPE_WEBHOOK_SECRET
     ) {
-      return res.status(200).send("Webhook disabled.");
+      return res
+        .status(200)
+        .send(
+          "Webhook disabled."
+        );
     }
 
     try {
-      const stripe = new Stripe(
-        process.env.STRIPE_SECRET_KEY
-      );
+      const stripe =
+        new Stripe(
+          process.env
+            .STRIPE_SECRET_KEY
+        );
 
-      const event = stripe.webhooks.constructEvent(
-        req.rawBody,
-        req.headers["stripe-signature"],
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
+      const event =
+        stripe.webhooks.constructEvent(
+          req.rawBody ||
+            req.body,
+          req.headers[
+            "stripe-signature"
+          ],
+          process.env
+            .STRIPE_WEBHOOK_SECRET
+        );
 
       if (
-        event.type === "checkout.session.completed"
+        event.type ===
+        "checkout.session.completed"
       ) {
-        const session = event.data.object;
+        const session =
+          event.data.object;
 
-        const orderId = Number(
-          session.metadata?.order_id
-        );
+        const orderId =
+          Number(
+            session.metadata
+              ?.order_id
+          );
 
         if (orderId) {
           await pool.query(
@@ -711,11 +923,15 @@ app.post(
             UPDATE orders
             SET
               payment_status = 'paid',
+
               status = CASE
-                WHEN status = 'received' THEN 'paid'
+                WHEN status = 'received'
+                THEN 'paid'
                 ELSE status
               END,
-              updated_at = CURRENT_TIMESTAMP
+
+              updated_at =
+                CURRENT_TIMESTAMP
             WHERE id = $1
             `,
             [orderId]
@@ -724,7 +940,8 @@ app.post(
       }
 
       res.json({
-        received: true
+        received:
+          true
       });
     } catch (e) {
       console.error(
@@ -732,9 +949,11 @@ app.post(
         e
       );
 
-      res.status(400).send(
-        `Webhook Error: ${e.message}`
-      );
+      res
+        .status(400)
+        .send(
+          `Webhook Error: ${e.message}`
+        );
     }
   }
 );
@@ -742,34 +961,43 @@ app.post(
 /*
   UPLOAD ORDER FILE
 */
+
 app.post(
   "/api/orders/:id/files",
   auth,
   upload.single("file"),
   async (req, res) => {
     try {
-      const orderId = Number(req.params.id);
+      const orderId =
+        Number(
+          req.params.id
+        );
 
-      const order = await dbGet(
-        "SELECT * FROM orders WHERE id = $1",
-        [orderId]
-      );
+      const order =
+        await dbGet(
+          "SELECT * FROM orders WHERE id = $1",
+          [orderId]
+        );
 
       if (
         !order ||
         (
-          order.user_id !== req.user.id &&
-          req.user.role !== "admin"
+          order.user_id !==
+            req.user.id &&
+          req.user.role !==
+            "admin"
         )
       ) {
         return res.status(404).json({
-          error: "Order not found."
+          error:
+            "Order not found."
         });
       }
 
       if (!req.file) {
         return res.status(400).json({
-          error: "No file uploaded."
+          error:
+            "No file uploaded."
         });
       }
 
@@ -784,14 +1012,18 @@ app.post(
         `,
         [
           orderId,
-          req.file.originalname,
-          req.file.filename
+          req.file
+            .originalname,
+          req.file
+            .filename
         ]
       );
 
       res.json({
         ok: true,
-        filename: req.file.originalname
+        filename:
+          req.file
+            .originalname
       });
     } catch (e) {
       console.error(
@@ -800,7 +1032,8 @@ app.post(
       );
 
       res.status(500).json({
-        error: "Could not save uploaded file."
+        error:
+          "Could not save uploaded file."
       });
     }
   }
@@ -809,25 +1042,30 @@ app.post(
 /*
   ADMIN ORDERS
 */
+
 app.get(
   "/api/admin/orders",
   auth,
   admin,
   async (req, res) => {
     try {
-      const rows = await dbAll(`
-        SELECT
-          o.*,
-          u.name AS customer_name,
-          u.email AS customer_email
-        FROM orders o
-        JOIN users u
-          ON u.id = o.user_id
-        ORDER BY o.id DESC
-      `);
+      const rows =
+        await dbAll(
+          `
+          SELECT
+            o.*,
+            u.name AS customer_name,
+            u.email AS customer_email
+          FROM orders o
+          JOIN users u
+            ON u.id = o.user_id
+          ORDER BY o.id DESC
+          `
+        );
 
       res.json({
-        orders: rows
+        orders:
+          rows
       });
     } catch (e) {
       console.error(
@@ -836,7 +1074,8 @@ app.get(
       );
 
       res.status(500).json({
-        error: "Could not load orders."
+        error:
+          "Could not load orders."
       });
     }
   }
@@ -845,13 +1084,17 @@ app.get(
 /*
   ADMIN UPDATE ORDER
 */
+
 app.patch(
   "/api/admin/orders/:id",
   auth,
   admin,
   async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id =
+        Number(
+          req.params.id
+        );
 
       const allowed = [
         "received",
@@ -863,39 +1106,89 @@ app.patch(
         "cancelled"
       ];
 
-      const status = String(
-        req.body.status || ""
-      );
+      const status =
+        String(
+          req.body.status ||
+            ""
+        );
 
-      const note = String(
-        req.body.admin_note || ""
-      );
+      const note =
+        String(
+          req.body.admin_note ||
+            ""
+        );
 
-      if (!allowed.includes(status)) {
+      if (
+        !allowed.includes(
+          status
+        )
+      ) {
         return res.status(400).json({
-          error: "Invalid status."
+          error:
+            "Invalid status."
         });
       }
 
-      await pool.query(
-        `
-        UPDATE orders
-        SET
-          status = $1,
-          admin_note = $2,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $3
-        `,
-        [status, note, id]
-      );
+      /*
+        If admin marks an order paid,
+        keep payment status synchronized.
+      */
 
-      const order = await dbGet(
-        "SELECT * FROM orders WHERE id = $1",
-        [id]
-      );
+      if (
+        status === "paid"
+      ) {
+        await pool.query(
+          `
+          UPDATE orders
+          SET
+            status = $1,
+            payment_status = 'paid',
+            admin_note = $2,
+            updated_at =
+              CURRENT_TIMESTAMP
+          WHERE id = $3
+          `,
+          [
+            status,
+            note,
+            id
+          ]
+        );
+      } else {
+        await pool.query(
+          `
+          UPDATE orders
+          SET
+            status = $1,
+            admin_note = $2,
+            updated_at =
+              CURRENT_TIMESTAMP
+          WHERE id = $3
+          `,
+          [
+            status,
+            note,
+            id
+          ]
+        );
+      }
+
+      const order =
+        await dbGet(
+          "SELECT * FROM orders WHERE id = $1",
+          [id]
+        );
+
+      if (!order) {
+        return res.status(404).json({
+          error:
+            "Order not found."
+        });
+      }
 
       res.json({
-        order: publicOrder(order)
+        order:
+          publicOrder(order)
       });
     } catch (e) {
       console.error(
@@ -904,7 +1197,8 @@ app.patch(
       );
 
       res.status(500).json({
-        error: "Could not update order."
+        error:
+          "Could not update order."
       });
     }
   }
@@ -913,50 +1207,94 @@ app.patch(
 /*
   ADMIN STATS
 */
+
 app.get(
   "/api/admin/stats",
   auth,
   admin,
   async (req, res) => {
     try {
-      const totalResult = await pool.query(
-        "SELECT COUNT(*)::int AS c FROM orders"
-      );
+      /*
+        TOTAL ORDERS
+      */
 
-      const paidResult = await pool.query(
-        `
-        SELECT COUNT(*)::int AS c
-        FROM orders
-        WHERE payment_status = 'paid'
-        `
-      );
+      const totalResult =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS c
+          FROM orders
+          `
+        );
 
-      const activeResult = await pool.query(
-        `
-        SELECT COUNT(*)::int AS c
-        FROM orders
-        WHERE status IN (
-          'paid',
-          'reviewing',
-          'in_progress',
-          'ready'
-        )
-        `
-      );
+      /*
+        PAID ORDERS
+      */
 
-      const customersResult = await pool.query(
-        `
-        SELECT COUNT(*)::int AS c
-        FROM users
-        WHERE role = 'customer'
-        `
-      );
+      const paidResult =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS c
+          FROM orders
+          WHERE payment_status = 'paid'
+          `
+        );
+
+      /*
+        ACTIVE OPERATIONS
+
+        A paid order is considered active even if
+        its status was accidentally left as "received".
+      */
+
+      const activeResult =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS c
+          FROM orders
+          WHERE
+            payment_status = 'paid'
+            OR status IN (
+              'paid',
+              'reviewing',
+              'in_progress',
+              'ready'
+            )
+          `
+        );
+
+      /*
+        CUSTOMERS
+      */
+
+      const customersResult =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS c
+          FROM users
+          WHERE role = 'customer'
+          `
+        );
 
       res.json({
-        total: totalResult.rows[0].c,
-        paid: paidResult.rows[0].c,
-        active: activeResult.rows[0].c,
-        customers: customersResult.rows[0].c
+        total:
+          totalResult
+            .rows[0].c,
+
+        paid:
+          paidResult
+            .rows[0].c,
+
+        active:
+          activeResult
+            .rows[0].c,
+
+        customers:
+          customersResult
+            .rows[0].c
       });
     } catch (e) {
       console.error(
@@ -965,7 +1303,40 @@ app.get(
       );
 
       res.status(500).json({
-        error: "Could not load statistics."
+        error:
+          "Could not load statistics."
+      });
+    }
+  }
+);
+
+/*
+  HEALTH CHECK
+*/
+
+app.get(
+  "/api/health",
+  async (req, res) => {
+    try {
+      await pool.query(
+        "SELECT 1"
+      );
+
+      res.json({
+        ok: true,
+        database:
+          "connected"
+      });
+    } catch (e) {
+      console.error(
+        "Health check error:",
+        e
+      );
+
+      res.status(500).json({
+        ok: false,
+        database:
+          "error"
       });
     }
   }
@@ -974,29 +1345,36 @@ app.get(
 /*
   FRONTEND FALLBACK
 */
-app.use((req, res) => {
-  res.sendFile(
-    path.join(
-      __dirname,
-      "public",
-      "index.html"
-    )
-  );
-});
+
+app.use(
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        __dirname,
+        "public",
+        "index.html"
+      )
+    );
+  }
+);
 
 /*
   START SERVER
 */
+
 async function startServer() {
   try {
     await initDatabase();
     await seedAdmin();
 
-    app.listen(PORT, () => {
-      console.log(
-        `R6 Recoveries running at ${PUBLIC_URL}`
-      );
-    });
+    app.listen(
+      PORT,
+      () => {
+        console.log(
+          `R6 Recoveries running at ${PUBLIC_URL}`
+        );
+      }
+    );
   } catch (error) {
     console.error(
       "Failed to start server:",
