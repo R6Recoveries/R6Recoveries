@@ -275,8 +275,9 @@ app.post("/api/payments/checkout", auth, async (req, res) => {
     });
     db.prepare("UPDATE orders SET stripe_session_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(session.id, order.id);
     res.json({ url: session.url });
-  } catch {
-    res.status(500).json({ error: "Stripe checkout could not be created." });
+    } catch (e) {
+    console.error("Stripe checkout error:", e);
+    res.status(500).json({ error: e.message || "Stripe checkout could not be created." });
   }
 });
 
