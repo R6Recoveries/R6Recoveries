@@ -7,7 +7,12 @@ const catalogDetails={"R6 Settings Recovery":{key:"settings",summary:"Competitiv
 function toast(msg,bad=false){const x=document.createElement("div");x.className="toast"+(bad?" bad":"");x.textContent=msg;$("#toast").appendChild(x);setTimeout(()=>x.remove(),3800)}
 async function api(path,opts={}){opts.headers={...(opts.headers||{}),...(token?{Authorization:`Bearer ${token}`}:{})};if(opts.body&&!(opts.body instanceof FormData))opts.headers["Content-Type"]="application/json";const r=await fetch(API+path,opts);let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||"Something went wrong.");return d}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#039;"}[m]))}
-function nav(){const n=$("#navAuth");n.innerHTML=token?`<button class="btn btn-small" data-action="dashboard">${me?.role==="admin"?"COMMAND CENTER":"DASHBOARD"}</button>`:`<button class="btn btn-small" data-action="login">CREATE ACCOUNT</button>`}
+function nav(){
+  const n=$("#navAuth");
+  n.innerHTML=token
+    ? `<button class="btn btn-small" data-action="dashboard">${me?.role==="admin"?"COMMAND CENTER":"DASHBOARD"}</button>`
+    : `<button class="btn btn-small" data-action="login">CREATE ACCOUNT</button>`;
+}
 function showOnly(id){["auth","dashboard","admin"].forEach(x=>$("#"+x)?.classList.add("hidden"));if(id)$("#"+id)?.classList.remove("hidden")}
 function showAuth(mode="register"){location.hash="auth";showOnly("auth");$("#loginForm").classList.toggle("hidden",mode!=="login");$("#registerForm").classList.toggle("hidden",mode!=="register")}
 async function loadMe(){if(!token){nav();return}try{const d=await api("/me");me=d.user;renderDashboard(d);nav()}catch{token=null;me=null;localStorage.removeItem("r6_token");nav()}}
