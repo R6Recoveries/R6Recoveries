@@ -233,3 +233,44 @@ input,select,textarea{font-size:13px;padding:14px 15px;background:rgba(0,2,5,.48
   .processGrid>div{min-height:225px}.processGrid strong{font-size:15px}.processGrid p{font-size:10px}
   .faqGrid summary{font-size:14px}.faqGrid p{font-size:10px}
 }
+
+/* READABILITY PASS — all descriptive/supporting copy enlarged */
+.heroLead{font-size:17px;line-height:1.9;max-width:760px}
+.sectionHead>p{font-size:14px;line-height:1.9;max-width:480px}
+.quickGrid small{font-size:10px;line-height:1.45}
+.privateIntro p{font-size:15px;line-height:1.9}
+.secureStrip{font-size:9px}
+.catalogIntro p{font-size:13px;line-height:1.8;max-width:760px}
+.serviceCard p{font-size:14px;line-height:1.85;min-height:126px;color:#b2c3cc}
+.serviceCard ul{font-size:11px;line-height:2.15;color:#91a6b5}
+.module p{font-size:13px;line-height:1.9;max-width:330px;color:#a0b2bd}
+.moduleTag{font-size:9px}
+.diagnosticAside>p{font-size:12px;line-height:2.18}
+.diagnosticNote span{font-size:13px;line-height:1.85}
+.deploymentIntro p{font-size:14px;line-height:1.9}
+.processGrid p{font-size:13px;line-height:1.9;color:#93a7b2}
+.processGrid span{font-size:9px}
+.faqGrid p{font-size:13px;line-height:1.95;color:#95a8b2}
+.reviewHero p,.review p{font-size:14px;line-height:1.9;color:#a4b5bf}
+.reviewHero span{font-size:9px}
+.profileCard p{font-size:11px}
+.orderMeta{font-size:10px}
+.modalIntro{font-size:13px;line-height:1.85}
+
+@media(max-width:650px){
+  .heroLead{font-size:15px;line-height:1.85}
+  .sectionHead>p{font-size:13px;line-height:1.85}
+  .privateIntro p{font-size:14px;line-height:1.85}
+  .quickGrid small{font-size:9px}
+  .catalogIntro p{font-size:12px;line-height:1.8}
+  .serviceCard p{font-size:13px;line-height:1.8;min-height:118px}
+  .serviceCard ul{font-size:10px;line-height:2.05}
+  .module p{font-size:12px;line-height:1.85}
+  .diagnosticAside>p{font-size:11px}
+  .diagnosticNote span{font-size:12px;line-height:1.8}
+  .deploymentIntro p{font-size:13px;line-height:1.85}
+  .processGrid p{font-size:12px;line-height:1.8}
+  .faqGrid p{font-size:12px;line-height:1.85}
+  .reviewHero p,.review p{font-size:13px;line-height:1.85}
+  .modalIntro{font-size:12px;line-height:1.8}
+}
