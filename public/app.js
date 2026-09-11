@@ -1,13 +1,12 @@
-```javascript
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => [...document.querySelectorAll(selector)];
-
 const API = "/api";
 
 let token = localStorage.getItem("r6_token");
-let me = null;
+let currentUser = null;
+let currentOrders = [];
 
-const statuses = [
+const $ = (selector) => document.querySelector(selector);
+
+const statusOrder = [
   "received",
   "paid",
   "reviewing",
@@ -17,40 +16,78 @@ const statuses = [
 ];
 
 const serviceNames = {
-  settings: "R6 Settings Recovery — $10",
-  fps: "FPS Optimization — $15",
-  full: "Full PC + R6 Recovery — $25",
-  vod: "R6 VOD Review — $10"
+  settings: "R6 Settings Recovery",
+  fps: "FPS Optimization",
+  full: "Full PC + R6 Recovery",
+  vod: "R6 VOD Review"
 };
 
 /* =========================
-   TOASTS
+   HELPERS
 ========================= */
 
-function toast(message, bad = false) {
-  const container = $("#toast");
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    })[char]
+  );
+}
 
-  if (!container) {
-    console.log(bad ? "ERROR:" : "INFO:", message);
+function showToast(message, error = false) {
+  const toast = $("#toast");
+
+  if (!toast) {
+    console.log(message);
     return;
   }
 
-  const element = document.createElement("div");
+  const item = document.createElement("div");
 
-  element.className =
-    "toast" + (bad ? " bad" : "");
+  item.className = error
+    ? "toast bad"
+    : "toast";
 
-  element.textContent = message;
+  item.textContent = message;
 
-  container.appendChild(element);
+  toast.appendChild(item);
 
   setTimeout(() => {
-    element.remove();
-  }, 3800);
+    item.remove();
+  }, 4000);
+}
+
+function formatDate(dateValue) {
+  if (!dateValue) return "—";
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleDateString();
+}
+
+function formatDateTime(dateValue) {
+  if (!dateValue) return "—";
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleString();
 }
 
 /* =========================
-   API
+   API REQUEST
 ========================= */
 
 async function api(path, options = {}) {
@@ -59,16 +96,14 @@ async function api(path, options = {}) {
   };
 
   if (token) {
-    headers.Authorization =
-      `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
 
   if (
     options.body &&
     !(options.body instanceof FormData)
   ) {
-    headers["Content-Type"] =
-      "application/json";
+    headers["Content-Type"] = "application/json";
   }
 
   const response = await fetch(
@@ -90,7 +125,7 @@ async function api(path, options = {}) {
   if (!response.ok) {
     throw new Error(
       data.error ||
-        `Request failed (${response.status}).`
+      `Server error (${response.status})`
     );
   }
 
@@ -98,181 +133,171 @@ async function api(path, options = {}) {
 }
 
 /* =========================
-   HTML ESCAPE
+   SECTION CONTROL
 ========================= */
 
-function esc(value) {
-  return String(value ?? "").replace(
-    /[&<>"']/g,
-    (match) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-      })[match]
-  );
+function showSection(id) {
+  const sections = [
+    "auth",
+    "dashboard",
+    "admin"
+  ];
+
+  sections.forEach((sectionId) => {
+    const element = $(`#${sectionId}`);
+
+    if (!element) return;
+
+    element.classList.add("hidden");
+  });
+
+  const target = $(`#${id}`);
+
+  if (target) {
+    target.classList.remove("hidden");
+  }
 }
 
 /* =========================
    NAVIGATION
 ========================= */
 
-function nav() {
+function updateNav() {
   const navAuth = $("#navAuth");
 
   if (!navAuth) return;
 
-  if (token) {
-    navAuth.innerHTML = `
-      <button
-        class="btn btn-small"
-        data-action="dashboard"
-      >
-        ${
-          me?.role === "admin"
-            ? "COMMAND CENTER"
-            : "DASHBOARD"
-        }
-      </button>
-    `;
-  } else {
+  if (!token || !currentUser) {
     navAuth.innerHTML = `
       <button
         class="btn btn-small"
         data-action="login"
       >
-        SIGN IN
+        CREATE ACCOUNT
       </button>
     `;
+
+    return;
   }
+
+  navAuth.innerHTML = `
+    <button
+      class="btn btn-small"
+      data-action="dashboard"
+    >
+      ${
+        currentUser.role === "admin"
+          ? "COMMAND CENTER"
+          : "DASHBOARD"
+      }
+    </button>
+  `;
 }
 
-function showOnly(sectionId) {
-  [
-    "auth",
-    "dashboard",
-    "admin"
-  ].forEach((id) => {
-    const element = $("#" + id);
-
-    if (element) {
-      element.classList.add("hidden");
-    }
-  });
-
-  if (sectionId) {
-    const element =
-      $("#" + sectionId);
-
-    if (element) {
-      element.classList.remove("hidden");
-    }
-  }
-}
-
-function showAuth(mode = "login") {
+function openLogin() {
   location.hash = "auth";
 
-  showOnly("auth");
+  showSection("auth");
 
-  const loginForm =
-    $("#loginForm");
+  const login = $("#loginForm");
+  const register = $("#registerForm");
 
-  const registerForm =
-    $("#registerForm");
-
-  if (loginForm) {
-    loginForm.classList.toggle(
-      "hidden",
-      mode !== "login"
-    );
+  if (login) {
+    login.classList.remove("hidden");
   }
 
-  if (registerForm) {
-    registerForm.classList.toggle(
-      "hidden",
-      mode !== "register"
-    );
+  if (register) {
+    register.classList.add("hidden");
+  }
+}
+
+function openRegister() {
+  location.hash = "auth";
+
+  showSection("auth");
+
+  const login = $("#loginForm");
+  const register = $("#registerForm");
+
+  if (login) {
+    login.classList.add("hidden");
+  }
+
+  if (register) {
+    register.classList.remove("hidden");
   }
 }
 
 /* =========================
-   CURRENT USER
+   LOAD ACCOUNT
 ========================= */
 
 async function loadMe() {
   if (!token) {
-    nav();
+    updateNav();
     return;
   }
 
   try {
-    const data =
-      await api("/me");
+    console.log("[R6R] Loading /api/me...");
 
-    if (
-      !data ||
-      !data.user
-    ) {
+    const data = await api("/me");
+
+    console.log("[R6R] /api/me response:", data);
+
+    if (!data.user) {
       throw new Error(
-        "The server returned an invalid account response."
+        "No user was returned by the server."
       );
     }
 
-    me = data.user;
+    currentUser = data.user;
 
-    /*
-      Make absolutely sure orders is
-      always an array.
-    */
-    if (!Array.isArray(data.orders)) {
-      data.orders = [];
+    currentOrders = Array.isArray(data.orders)
+      ? data.orders
+      : [];
+
+    console.log(
+      "[R6R] Orders returned:",
+      currentOrders
+    );
+
+    updateNav();
+
+    if (currentUser.role === "admin") {
+      await loadAdmin();
+      return;
     }
 
-    window.__orders =
-      data.orders;
-
-    renderDashboard(data);
-
-    nav();
+    renderDashboard();
 
   } catch (error) {
     console.error(
-      "Dashboard loading error:",
+      "[R6R] Dashboard error:",
       error
     );
 
     /*
-      IMPORTANT:
-      Do NOT silently delete the token
-      on a temporary server/database error.
+      Only remove the token when the
+      server specifically says the
+      authentication is invalid.
     */
 
     if (
-      error.message.includes(
-        "401"
-      ) ||
-      error.message
-        .toLowerCase()
-        .includes("token") ||
-      error.message
-        .toLowerCase()
-        .includes("unauthorized")
+      error.message.toLowerCase().includes("token") ||
+      error.message.toLowerCase().includes("unauthorized") ||
+      error.message.includes("(401)")
     ) {
       token = null;
-      me = null;
+      currentUser = null;
+      currentOrders = [];
 
-      localStorage.removeItem(
-        "r6_token"
-      );
+      localStorage.removeItem("r6_token");
 
-      nav();
+      updateNav();
+      openLogin();
 
-      showAuth("login");
-
-      toast(
+      showToast(
         "Your session expired. Please sign in again.",
         true
       );
@@ -280,35 +305,28 @@ async function loadMe() {
       return;
     }
 
-    toast(
-      "Could not load your dashboard: " +
-        error.message,
-      true
-    );
-
     /*
-      Show the dashboard even when
-      the request failed, so the user
-      can actually see the error.
+      Keep the dashboard visible so
+      the user can actually see the
+      error instead of getting a blank
+      page.
     */
 
-    showOnly("dashboard");
+    showSection("dashboard");
 
-    const orders =
-      $("#orders");
+    const orders = $("#orders");
 
     if (orders) {
       orders.innerHTML = `
         <div class="statusBox">
-
           <strong
             style="
               display:block;
-              margin-bottom:8px;
               color:var(--white);
+              margin-bottom:8px;
             "
           >
-            DASHBOARD ERROR
+            DASHBOARD CONNECTION ERROR
           </strong>
 
           <p
@@ -318,445 +336,421 @@ async function loadMe() {
               line-height:1.6;
             "
           >
-            ${esc(error.message)}
+            ${escapeHtml(error.message)}
           </p>
 
           <button
             class="btn btn-hot"
-            style="margin-top:12px"
+            style="margin-top:14px"
             data-action="dashboard"
           >
             RETRY →
           </button>
-
         </div>
       `;
     }
+
+    showToast(
+      "Could not load your dashboard.",
+      true
+    );
   }
 }
 
 /* =========================
-   DASHBOARD
+   RENDER DASHBOARD
 ========================= */
 
-function renderDashboard(data) {
-  showOnly("dashboard");
+function renderDashboard() {
+  showSection("dashboard");
 
-  const user =
-    data.user || {};
+  const firstName =
+    currentUser?.name
+      ?.trim()
+      ?.split(/\s+/)[0] ||
+    "OPERATOR";
 
-  const orders =
-    Array.isArray(data.orders)
-      ? data.orders
-      : [];
-
-  window.__orders = orders;
-
-  const dashName =
-    $("#dashName");
+  const dashName = $("#dashName");
 
   if (dashName) {
     dashName.textContent =
-      (
-        user.name ||
-        "OPERATOR"
-      )
-        .split(" ")[0]
-        .toUpperCase();
+      firstName.toUpperCase();
   }
 
-  const orderCount =
-    $("#orderCount");
+  const orderCount = $("#orderCount");
 
   if (orderCount) {
     orderCount.textContent =
-      orders.length;
+      currentOrders.length;
   }
 
-  /* PROFILE */
+  renderProfile();
+  renderOrders();
+  renderStatus();
+}
 
-  const profile =
-    $("#profile");
+/* =========================
+   PROFILE
+========================= */
 
-  if (profile) {
-    const completed =
-      orders.filter(
-        (order) =>
-          order.status ===
-          "completed"
-      ).length;
+function renderProfile() {
+  const profile = $("#profile");
 
-    profile.innerHTML = `
-      <div class="profileCard">
+  if (!profile) return;
 
-        <div class="profileOrb"></div>
+  const completed =
+    currentOrders.filter(
+      (order) =>
+        order.status === "completed"
+    ).length;
+
+  profile.innerHTML = `
+    <div class="profileCard">
+
+      <div class="profileOrb"></div>
+
+      <div>
+        <h3>
+          ${escapeHtml(
+            currentUser?.name ||
+            "Operator"
+          )}
+        </h3>
+
+        <p>
+          ${escapeHtml(
+            currentUser?.email ||
+            ""
+          )}
+
+          /
+
+          CUSTOMER ID
+
+          ${escapeHtml(
+            String(
+              currentUser?.id || ""
+            ).padStart(4, "0")
+          )}
+        </p>
+      </div>
+
+      <div class="profileStats">
 
         <div>
+          <strong>
+            ${currentOrders.length}
+          </strong>
 
-          <h3>
-            ${esc(
-              user.name ||
-                "Operator"
-            )}
-          </h3>
-
-          <p>
-            ${esc(
-              user.email ||
-                ""
-            )}
-
-            /
-
-            CUSTOMER ID
-
-            ${String(
-              user.id || ""
-            ).padStart(4, "0")}
-          </p>
-
+          <span>
+            ORDERS
+          </span>
         </div>
 
-        <div class="profileStats">
+        <div>
+          <strong>
+            ${completed}
+          </strong>
 
-          <div>
-            <strong>
-              ${orders.length}
-            </strong>
+          <span>
+            COMPLETED
+          </span>
+        </div>
 
-            <span>
-              ORDERS
-            </span>
-          </div>
+        <div>
+          <strong>
+            ONLINE
+          </strong>
 
-          <div>
-            <strong>
-              ${completed}
-            </strong>
-
-            <span>
-              COMPLETED
-            </span>
-          </div>
-
-          <div>
-            <strong>
-              ONLINE
-            </strong>
-
-            <span>
-              PROFILE
-            </span>
-          </div>
-
+          <span>
+            PROFILE
+          </span>
         </div>
 
       </div>
+
+    </div>
+  `;
+}
+
+/* =========================
+   ORDERS
+========================= */
+
+function renderOrders() {
+  const container = $("#orders");
+
+  if (!container) {
+    console.error(
+      "[R6R] #orders element not found."
+    );
+
+    return;
+  }
+
+  if (currentOrders.length === 0) {
+    container.innerHTML = `
+      <div class="statusBox">
+
+        <p
+          style="
+            color:#697584;
+            font-size:9px;
+            line-height:1.6;
+          "
+        >
+          No orders yet.
+          Choose an operation
+          and launch your first recovery.
+        </p>
+
+        <a
+          class="btn btn-hot"
+          href="#services"
+        >
+          EXPLORE SERVICES →
+        </a>
+
+      </div>
     `;
+
+    return;
   }
 
-  /* ORDERS */
-
-  const ordersContainer =
-    $("#orders");
-
-  if (ordersContainer) {
-    if (orders.length === 0) {
-
-      ordersContainer.innerHTML = `
-        <div class="statusBox">
-
-          <p
-            style="
-              color:#697584;
-              font-size:9px;
-              line-height:1.6;
-            "
-          >
-            No orders yet.
-            Choose an operation
-            and launch your first recovery.
-          </p>
-
-          <a
-            class="btn btn-hot"
-            href="#services"
-          >
-            EXPLORE SERVICES →
-          </a>
-
-        </div>
-      `;
-
-    } else {
-
-      ordersContainer.innerHTML =
-        orders
-          .map(
-            (order) =>
-              `
-                <div
-                  class="orderRow"
-                  data-order-id="${esc(
-                    order.id
-                  )}"
-                >
-
-                  <div class="orderTop">
-
-                    <strong>
-                      #${esc(order.id)}
-                      ·
-                      ${esc(
-                        order.service
-                      )}
-                    </strong>
-
-                    <span class="status">
-                      ${esc(
-                        String(
-                          order.status ||
-                            "received"
-                        )
-                          .toUpperCase()
-                          .replaceAll(
-                            "_",
-                            " "
-                          )
-                      )}
-                    </span>
-
-                  </div>
-
-                  <div class="orderMeta">
-
-                    ${esc(
-                      String(
-                        order.payment_status ||
-                          "unpaid"
-                      ).toUpperCase()
-                    )}
-
-                    /
-
-                    ${esc(
-                      order.platform ||
-                        "Unknown"
-                    )}
-
-                    /
-
-                    ${formatDate(
-                      order.created_at
-                    )}
-
-                  </div>
-
-                  ${
-                    order.r6_username
-                      ? `
-                        <div class="orderMeta">
-                          R6:
-                          ${esc(
-                            order.r6_username
-                          )}
-                        </div>
-                      `
-                      : ""
-                  }
-
-                  ${
-                    order.discord_username
-                      ? `
-                        <div class="orderMeta">
-                          DISCORD:
-                          ${esc(
-                            order.discord_username
-                          )}
-                        </div>
-                      `
-                      : ""
-                  }
-
-                  ${
-                    order.details
-                      ? `
-                        <div
-                          class="orderMeta"
-                          style="
-                            margin-top:8px;
-                            color:#8d98a6;
-                          "
-                        >
-                          ${esc(
-                            order.details
-                          )}
-                        </div>
-                      `
-                      : ""
-                  }
-
-                  ${
-                    order.admin_note
-                      ? `
-                        <div
-                          class="orderMeta"
-                          style="
-                            margin-top:8px;
-                            color:var(--cyan);
-                          "
-                        >
-                          ADMIN:
-                          ${esc(
-                            order.admin_note
-                          )}
-                        </div>
-                      `
-                      : ""
-                  }
-
-                </div>
-              `
+  container.innerHTML =
+    currentOrders
+      .map((order) => {
+        const status =
+          String(
+            order.status ||
+            "received"
           )
-          .join("");
-    }
-  }
+            .replaceAll("_", " ")
+            .toUpperCase();
 
-  /* STATUS PANEL */
+        const payment =
+          String(
+            order.payment_status ||
+            "unpaid"
+          ).toUpperCase();
 
-  const statusPanel =
-    $("#statusPanel");
+        return `
+          <div
+            class="orderRow"
+            data-order-id="${escapeHtml(
+              order.id
+            )}"
+          >
 
-  if (statusPanel) {
-    const current =
-      orders.length
-        ? orders[0]
-        : null;
+            <div class="orderTop">
 
-    statusPanel.innerHTML =
-      current
-        ? statusHTML(current)
-        : `
-          <div class="statusBox">
+              <strong>
+                #${escapeHtml(
+                  order.id
+                )}
 
-            <p
-              style="
-                color:#697584;
-                font-size:9px;
-                line-height:1.6;
-              "
-            >
-              Your next recovery
-              will appear here.
-            </p>
+                ·
+
+                ${escapeHtml(
+                  serviceNames[
+                    order.service
+                  ] ||
+                  order.service ||
+                  "R6 Recovery"
+                )}
+              </strong>
+
+              <span class="status">
+                ${escapeHtml(status)}
+              </span>
+
+            </div>
+
+            <div class="orderMeta">
+              ${escapeHtml(payment)}
+              /
+              ${escapeHtml(
+                order.platform ||
+                "Unknown"
+              )}
+              /
+              ${formatDate(
+                order.created_at
+              )}
+            </div>
+
+            ${
+              order.r6_username
+                ? `
+                  <div class="orderMeta">
+                    R6:
+                    ${escapeHtml(
+                      order.r6_username
+                    )}
+                  </div>
+                `
+                : ""
+            }
+
+            ${
+              order.discord_username
+                ? `
+                  <div class="orderMeta">
+                    DISCORD:
+                    ${escapeHtml(
+                      order.discord_username
+                    )}
+                  </div>
+                `
+                : ""
+            }
+
+            ${
+              order.details
+                ? `
+                  <div
+                    class="orderMeta"
+                    style="
+                      margin-top:8px;
+                      color:#8d98a6;
+                    "
+                  >
+                    ${escapeHtml(
+                      order.details
+                    )}
+                  </div>
+                `
+                : ""
+            }
+
+            ${
+              order.admin_note
+                ? `
+                  <div
+                    class="orderMeta"
+                    style="
+                      margin-top:8px;
+                      color:var(--cyan);
+                    "
+                  >
+                    ADMIN:
+                    ${escapeHtml(
+                      order.admin_note
+                    )}
+                  </div>
+                `
+                : ""
+            }
 
           </div>
         `;
-  }
+      })
+      .join("");
 }
 
 /* =========================
-   DATE FORMAT
+   STATUS PANEL
 ========================= */
 
-function formatDate(value) {
-  if (!value) {
-    return "—";
-  }
+function renderStatus() {
+  const panel =
+    $("#statusPanel");
 
-  const date =
-    new Date(
-      String(value).endsWith("Z")
-        ? value
-        : value + "Z"
-    );
+  if (!panel) return;
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "—";
-  }
-
-  return date.toLocaleDateString();
-}
-
-/* =========================
-   ORDER STATUS
-========================= */
-
-function statusHTML(order) {
-  const status =
-    order.status || "received";
-
-  const index =
-    statuses.indexOf(status);
-
-  if (status === "cancelled") {
-    return `
+  if (currentOrders.length === 0) {
+    panel.innerHTML = `
       <div class="statusBox">
 
-        <div class="stage current">
-          ORDER CANCELLED
-        </div>
+        <p
+          style="
+            color:#697584;
+            font-size:9px;
+            line-height:1.6;
+          "
+        >
+          Your next recovery
+          will appear here.
+        </p>
 
       </div>
     `;
+
+    return;
   }
 
-  return `
+  renderSelectedStatus(
+    currentOrders[0]
+  );
+}
+
+function renderSelectedStatus(order) {
+  const panel =
+    $("#statusPanel");
+
+  if (!panel) return;
+
+  const status =
+    order.status ||
+    "received";
+
+  const currentIndex =
+    statusOrder.indexOf(status);
+
+  const stages = statusOrder
+    .map((stage, index) => {
+
+      let className = "";
+
+      if (
+        index < currentIndex
+      ) {
+        className = "done";
+      }
+
+      if (
+        index === currentIndex
+      ) {
+        className = "current";
+      }
+
+      return `
+        <div class="stage ${className}">
+          ${
+            index < currentIndex
+              ? "✓ "
+              : ""
+          }
+          ${escapeHtml(
+            stage
+              .replaceAll(
+                "_",
+                " "
+              )
+              .toUpperCase()
+          )}
+        </div>
+      `;
+    })
+    .join("");
+
+  panel.innerHTML = `
     <div class="statusBox">
 
       <div class="statusTrack">
-
-        ${statuses
-          .map(
-            (statusName, i) => `
-              <div
-                class="
-                  stage
-                  ${
-                    i < index
-                      ? "done"
-                      : i === index
-                      ? "current"
-                      : ""
-                  }
-                "
-              >
-
-                ${
-                  i < index
-                    ? "✓ "
-                    : ""
-                }
-
-                ${statusName
-                  .replace(
-                    "_",
-                    " "
-                  )
-                  .toUpperCase()}
-
-              </div>
-            `
-          )
-          .join("")}
-
+        ${stages}
       </div>
 
       ${
-        order.payment_status !==
-        "paid"
+        order.payment_status !== "paid"
           ? `
             <button
               class="btn btn-hot"
               style="
                 width:100%;
-                margin-top:18px
+                margin-top:18px;
               "
-              data-pay="${esc(
+              data-pay="${escapeHtml(
                 order.id
               )}"
             >
@@ -773,9 +767,14 @@ function statusHTML(order) {
           color:#596675;
         "
       >
-        ORDER #${esc(order.id)}
+        ORDER #${escapeHtml(
+          order.id
+        )}
+
         /
+
         UPDATED
+
         ${formatDateTime(
           order.updated_at
         )}
@@ -785,205 +784,31 @@ function statusHTML(order) {
   `;
 }
 
-function formatDateTime(value) {
-  if (!value) {
-    return "—";
-  }
-
-  const date =
-    new Date(
-      String(value).endsWith("Z")
-        ? value
-        : value + "Z"
-    );
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "—";
-  }
-
-  return date.toLocaleString();
-}
-
 /* =========================
-   LOGOUT
-========================= */
-
-function logout() {
-  token = null;
-  me = null;
-
-  localStorage.removeItem(
-    "r6_token"
-  );
-
-  showOnly(null);
-
-  nav();
-
-  location.hash = "home";
-
-  toast(
-    "Signed out."
-  );
-}
-
-/* =========================
-   LOGIN
-========================= */
-
-async function login() {
-  try {
-    const email =
-      $("#loginEmail")?.value
-        ?.trim() || "";
-
-    const password =
-      $("#loginPassword")?.value ||
-      "";
-
-    if (!email || !password) {
-      toast(
-        "Enter your email and password.",
-        true
-      );
-
-      return;
-    }
-
-    const data =
-      await api(
-        "/auth/login",
-        {
-          method: "POST",
-
-          body: JSON.stringify({
-            email,
-            password
-          })
-        }
-      );
-
-    token = data.token;
-
-    me = data.user;
-
-    localStorage.setItem(
-      "r6_token",
-      token
-    );
-
-    toast(
-      "Access granted."
-    );
-
-    if (
-      me?.role ===
-      "admin"
-    ) {
-      await loadAdmin();
-    } else {
-      await loadMe();
-    }
-
-  } catch (error) {
-    console.error(
-      "Login error:",
-      error
-    );
-
-    toast(
-      error.message,
-      true
-    );
-  }
-}
-
-/* =========================
-   REGISTER
-========================= */
-
-async function register() {
-  try {
-    const name =
-      $("#regName")?.value
-        ?.trim() || "";
-
-    const email =
-      $("#regEmail")?.value
-        ?.trim() || "";
-
-    const password =
-      $("#regPassword")?.value ||
-      "";
-
-    const data =
-      await api(
-        "/auth/register",
-        {
-          method: "POST",
-
-          body: JSON.stringify({
-            name,
-            email,
-            password
-          })
-        }
-      );
-
-    token = data.token;
-
-    me = data.user;
-
-    localStorage.setItem(
-      "r6_token",
-      token
-    );
-
-    toast(
-      "Profile created."
-    );
-
-    await loadMe();
-
-  } catch (error) {
-    console.error(
-      "Registration error:",
-      error
-    );
-
-    toast(
-      error.message,
-      true
-    );
-  }
-}
-
-/* =========================
-   CREATE ORDER
+   ORDER MODAL
 ========================= */
 
 function createOrder(service) {
   if (!token) {
-    toast(
+    showToast(
       "Sign in first to create an order.",
       true
     );
 
-    showAuth("login");
+    openLogin();
 
     return;
   }
 
-  $("#orderModal")?.remove();
+  const existing =
+    $("#orderModal");
+
+  if (existing) {
+    existing.remove();
+  }
 
   const modal =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   modal.id =
     "orderModal";
@@ -1006,9 +831,9 @@ function createOrder(service) {
         </div>
 
         <h2>
-          ${esc(
+          ${escapeHtml(
             serviceNames[service] ||
-              "R6 Recovery"
+            "R6 Recovery"
           )}
         </h2>
 
@@ -1016,9 +841,17 @@ function createOrder(service) {
           PLATFORM
 
           <select id="oPlatform">
-            <option>PC</option>
-            <option>PlayStation</option>
-            <option>Xbox</option>
+            <option value="PC">
+              PC
+            </option>
+
+            <option value="PlayStation">
+              PlayStation
+            </option>
+
+            <option value="Xbox">
+              Xbox
+            </option>
           </select>
         </label>
 
@@ -1046,7 +879,6 @@ function createOrder(service) {
           <textarea
             id="oDetails"
             placeholder="Tell us what you need help with..."
-            required
           ></textarea>
         </label>
 
@@ -1062,10 +894,7 @@ function createOrder(service) {
           <input
             id="oTerms"
             type="checkbox"
-            style="
-              width:auto;
-              margin-top:2px;
-            "
+            style="width:auto;margin-top:2px"
           >
 
           <span
@@ -1079,7 +908,6 @@ function createOrder(service) {
             <a
               href="/terms.html"
               target="_blank"
-              rel="noopener"
               style="
                 color:var(--cyan);
                 text-decoration:underline;
@@ -1093,7 +921,6 @@ function createOrder(service) {
             <a
               href="/privacy.html"
               target="_blank"
-              rel="noopener"
               style="
                 color:var(--cyan);
                 text-decoration:underline;
@@ -1119,29 +946,25 @@ function createOrder(service) {
     </div>
   `;
 
-  document.body.appendChild(
-    modal
-  );
+  document.body.appendChild(modal);
 
-  modal.querySelector(
-    ".close"
-  ).onclick = () =>
-    modal.remove();
+  modal.querySelector(".close").onclick =
+    () => modal.remove();
 
-  modal.querySelector(
-    ".modalBack"
-  ).onclick = (event) => {
-    if (
-      event.target.classList.contains(
-        "modalBack"
-      )
-    ) {
-      modal.remove();
-    }
-  };
+  modal.querySelector(".modalBack").onclick =
+    (event) => {
+      if (
+        event.target.classList.contains(
+          "modalBack"
+        )
+      ) {
+        modal.remove();
+      }
+    };
 
   $("#createOrder").onclick =
     async () => {
+
       try {
         const details =
           $("#oDetails")
@@ -1153,8 +976,8 @@ function createOrder(service) {
             ?.checked;
 
         if (!details) {
-          toast(
-            "Please describe what you need help with.",
+          showToast(
+            "Please enter recovery details.",
             true
           );
 
@@ -1162,8 +985,8 @@ function createOrder(service) {
         }
 
         if (!accepted) {
-          toast(
-            "Please agree to the Terms of Service and Privacy Policy.",
+          showToast(
+            "Please accept the Terms and Privacy Policy.",
             true
           );
 
@@ -1178,21 +1001,12 @@ function createOrder(service) {
 
               body: JSON.stringify({
                 service,
-
                 platform:
-                  $("#oPlatform")
-                    .value,
-
+                  $("#oPlatform").value,
                 r6_username:
-                  $("#oR6")
-                    .value
-                    .trim(),
-
+                  $("#oR6").value.trim(),
                 discord_username:
-                  $("#oDiscord")
-                    .value
-                    .trim(),
-
+                  $("#oDiscord").value.trim(),
                 details
               })
             }
@@ -1200,9 +1014,15 @@ function createOrder(service) {
 
         modal.remove();
 
-        toast(
-          `Operation #${data.order.id} launched.`
+        showToast(
+          `Order #${data.order.id} created.`
         );
+
+        /*
+          THIS IS IMPORTANT:
+          Reload the account immediately
+          after creating the order.
+        */
 
         await loadMe();
 
@@ -1211,11 +1031,11 @@ function createOrder(service) {
 
       } catch (error) {
         console.error(
-          "Order creation error:",
+          "[R6R] Create order error:",
           error
         );
 
-        toast(
+        showToast(
           error.message,
           true
         );
@@ -1224,12 +1044,159 @@ function createOrder(service) {
 }
 
 /* =========================
-   STRIPE CHECKOUT
+   LOGIN
 ========================= */
 
-async function pay(id) {
+async function login() {
   try {
-    toast(
+    const email =
+      $("#loginEmail")
+        ?.value
+        ?.trim() || "";
+
+    const password =
+      $("#loginPassword")
+        ?.value || "";
+
+    if (!email || !password) {
+      showToast(
+        "Enter your email and password.",
+        true
+      );
+
+      return;
+    }
+
+    const data =
+      await api(
+        "/auth/login",
+        {
+          method: "POST",
+
+          body: JSON.stringify({
+            email,
+            password
+          })
+        }
+      );
+
+    token = data.token;
+    currentUser = data.user;
+
+    localStorage.setItem(
+      "r6_token",
+      token
+    );
+
+    showToast(
+      "Access granted."
+    );
+
+    /*
+      Immediately retrieve the
+      orders associated with this user.
+    */
+
+    await loadMe();
+
+    location.hash =
+      currentUser.role === "admin"
+        ? "admin"
+        : "dashboard";
+
+  } catch (error) {
+    console.error(
+      "[R6R] Login error:",
+      error
+    );
+
+    showToast(
+      error.message,
+      true
+    );
+  }
+}
+
+/* =========================
+   REGISTER
+========================= */
+
+async function register() {
+  try {
+    const name =
+      $("#regName")
+        ?.value
+        ?.trim() || "";
+
+    const email =
+      $("#regEmail")
+        ?.value
+        ?.trim() || "";
+
+    const password =
+      $("#regPassword")
+        ?.value || "";
+
+    if (!name || !email || !password) {
+      showToast(
+        "Please complete every field.",
+        true
+      );
+
+      return;
+    }
+
+    const data =
+      await api(
+        "/auth/register",
+        {
+          method: "POST",
+
+          body: JSON.stringify({
+            name,
+            email,
+            password
+          })
+        }
+      );
+
+    token = data.token;
+    currentUser = data.user;
+
+    localStorage.setItem(
+      "r6_token",
+      token
+    );
+
+    showToast(
+      "Profile created."
+    );
+
+    await loadMe();
+
+    location.hash =
+      "dashboard";
+
+  } catch (error) {
+    console.error(
+      "[R6R] Registration error:",
+      error
+    );
+
+    showToast(
+      error.message,
+      true
+    );
+  }
+}
+
+/* =========================
+   PAY
+========================= */
+
+async function pay(orderId) {
+  try {
+    showToast(
       "Creating secure checkout..."
     );
 
@@ -1241,14 +1208,14 @@ async function pay(id) {
 
           body: JSON.stringify({
             order_id:
-              Number(id)
+              Number(orderId)
           })
         }
       );
 
     if (data.demo) {
-      toast(
-        "Demo payment complete."
+      showToast(
+        "Demo payment completed."
       );
 
       await loadMe();
@@ -1267,11 +1234,11 @@ async function pay(id) {
 
   } catch (error) {
     console.error(
-      "Payment error:",
+      "[R6R] Payment error:",
       error
     );
 
-    toast(
+    showToast(
       error.message,
       true
     );
@@ -1283,11 +1250,6 @@ async function pay(id) {
 ========================= */
 
 async function loadAdmin() {
-  if (!token) {
-    showAuth("login");
-    return;
-  }
-
   try {
     const stats =
       await api(
@@ -1299,61 +1261,53 @@ async function loadAdmin() {
         "/admin/orders"
       );
 
-    showOnly("admin");
+    showSection("admin");
 
-    const adminStats =
+    const statsContainer =
       $("#adminStats");
 
-    if (adminStats) {
-      adminStats.innerHTML = [
-        [
-          stats.total,
-          "TOTAL ORDERS"
-        ],
-        [
-          stats.active,
-          "ACTIVE OPERATIONS"
-        ],
-        [
-          stats.paid,
-          "PAID"
-        ],
-        [
-          stats.customers,
-          "CUSTOMERS"
-        ]
-      ]
-        .map(
-          ([number, label]) =>
-            `
-              <div class="adminStat">
+    if (statsContainer) {
+      statsContainer.innerHTML = `
+        <div class="adminStat">
+          <strong>${escapeHtml(
+            stats.total
+          )}</strong>
+          <span>TOTAL ORDERS</span>
+        </div>
 
-                <strong>
-                  ${esc(number)}
-                </strong>
+        <div class="adminStat">
+          <strong>${escapeHtml(
+            stats.active
+          )}</strong>
+          <span>ACTIVE OPERATIONS</span>
+        </div>
 
-                <span>
-                  ${esc(label)}
-                </span>
+        <div class="adminStat">
+          <strong>${escapeHtml(
+            stats.paid
+          )}</strong>
+          <span>PAID</span>
+        </div>
 
-              </div>
-            `
-        )
-        .join("");
+        <div class="adminStat">
+          <strong>${escapeHtml(
+            stats.customers
+          )}</strong>
+          <span>CUSTOMERS</span>
+        </div>
+      `;
     }
 
-    const adminOrders =
+    const orders =
       $("#adminOrders");
 
-    if (!adminOrders) {
-      return;
-    }
+    if (!orders) return;
 
     if (
       !data.orders ||
       data.orders.length === 0
     ) {
-      adminOrders.innerHTML = `
+      orders.innerHTML = `
         <div class="statusBox">
           No orders.
         </div>
@@ -1362,146 +1316,137 @@ async function loadAdmin() {
       return;
     }
 
-    adminOrders.innerHTML =
+    orders.innerHTML =
       data.orders
         .map(
-          (order) =>
-            `
-              <div class="adminItem">
+          (order) => `
+            <div class="adminItem">
 
-                <div>
-                  <strong>
-                    #${esc(order.id)}
-                    ·
-                    ${esc(
+              <div>
+                <strong>
+                  #${escapeHtml(order.id)}
+                  ·
+                  ${escapeHtml(
+                    serviceNames[
                       order.service
-                    )}
-                  </strong>
+                    ] ||
+                    order.service
+                  )}
+                </strong>
 
-                  <small>
-                    ${esc(
-                      order.customer_name ||
-                        ""
-                    )}
-                    /
-                    ${esc(
-                      order.customer_email ||
-                        ""
-                    )}
-                  </small>
-                </div>
-
-                <div>
-                  <strong>
-                    ${esc(
-                      order.platform
-                    )}
-                  </strong>
-
-                  <small>
-                    ${esc(
-                      order.r6_username ||
-                        "No R6 username"
-                    )}
-                  </small>
-                </div>
-
-                <select
-                  data-status="${esc(
-                    order.id
-                  )}"
-                >
-
-                  ${[
-                    "received",
-                    "paid",
-                    "reviewing",
-                    "in_progress",
-                    "ready",
-                    "completed",
-                    "cancelled"
-                  ]
-                    .map(
-                      (status) =>
-                        `
-                          <option
-                            value="${status}"
-                            ${
-                              status ===
-                              order.status
-                                ? "selected"
-                                : ""
-                            }
-                          >
-                            ${status}
-                          </option>
-                        `
-                    )
-                    .join("")}
-
-                </select>
-
-                <input
-                  data-note="${esc(
-                    order.id
-                  )}"
-                  value="${esc(
-                    order.admin_note ||
-                      ""
-                  )}"
-                  placeholder="Internal note"
-                >
-
-                <button
-                  class="btn btn-small"
-                  data-save="${esc(
-                    order.id
-                  )}"
-                  type="button"
-                >
-                  SAVE
-                </button>
-
+                <small>
+                  ${escapeHtml(
+                    order.customer_name ||
+                    ""
+                  )}
+                  /
+                  ${escapeHtml(
+                    order.customer_email ||
+                    ""
+                  )}
+                </small>
               </div>
-            `
+
+              <div>
+                <strong>
+                  ${escapeHtml(
+                    order.platform
+                  )}
+                </strong>
+
+                <small>
+                  ${escapeHtml(
+                    order.r6_username ||
+                    "No R6 username"
+                  )}
+                </small>
+              </div>
+
+              <select
+                data-status="${escapeHtml(
+                  order.id
+                )}"
+              >
+                ${[
+                  "received",
+                  "paid",
+                  "reviewing",
+                  "in_progress",
+                  "ready",
+                  "completed",
+                  "cancelled"
+                ]
+                  .map(
+                    (status) => `
+                      <option
+                        value="${status}"
+                        ${
+                          order.status ===
+                          status
+                            ? "selected"
+                            : ""
+                        }
+                      >
+                        ${status}
+                      </option>
+                    `
+                  )
+                  .join("")}
+              </select>
+
+              <input
+                data-note="${escapeHtml(
+                  order.id
+                )}"
+                value="${escapeHtml(
+                  order.admin_note ||
+                  ""
+                )}"
+                placeholder="Internal note"
+              >
+
+              <button
+                class="btn btn-small"
+                data-save="${escapeHtml(
+                  order.id
+                )}"
+                type="button"
+              >
+                SAVE
+              </button>
+
+            </div>
+          `
         )
         .join("");
 
   } catch (error) {
     console.error(
-      "Admin loading error:",
+      "[R6R] Admin error:",
       error
     );
 
-    toast(
+    showToast(
       error.message,
       true
     );
   }
 }
 
-async function saveAdmin(id) {
+async function saveAdmin(orderId) {
   try {
-    const statusElement =
-      $(
-        `[data-status="${id}"]`
-      );
-
-    const noteElement =
-      $(
-        `[data-note="${id}"]`
-      );
-
     const status =
-      statusElement?.value ||
-      "received";
+      document.querySelector(
+        `[data-status="${orderId}"]`
+      )?.value || "received";
 
     const note =
-      noteElement?.value ||
-      "";
+      document.querySelector(
+        `[data-note="${orderId}"]`
+      )?.value || "";
 
     await api(
-      `/admin/orders/${id}`,
+      `/admin/orders/${orderId}`,
       {
         method: "PATCH",
 
@@ -1512,19 +1457,19 @@ async function saveAdmin(id) {
       }
     );
 
-    toast(
-      `Order #${id} updated.`
+    showToast(
+      `Order #${orderId} updated.`
     );
 
     await loadAdmin();
 
   } catch (error) {
     console.error(
-      "Admin save error:",
+      "[R6R] Admin update error:",
       error
     );
 
-    toast(
+    showToast(
       error.message,
       true
     );
@@ -1537,143 +1482,177 @@ async function saveAdmin(id) {
 
 document.addEventListener(
   "click",
-  (event) => {
+  async (event) => {
 
-    const actionElement =
+    const action =
       event.target.closest(
         "[data-action]"
       );
 
-    const action =
-      actionElement?.dataset.action;
+    if (action) {
 
-    if (action === "login") {
-      showAuth("login");
-      return;
-    }
+      const type =
+        action.dataset.action;
 
-    if (action === "dashboard") {
-      if (
-        me?.role === "admin"
-      ) {
-        loadAdmin();
-      } else {
-        loadMe();
+      if (type === "login") {
+        openLogin();
+        return;
       }
 
-      return;
+      if (type === "dashboard") {
+        if (
+          currentUser?.role ===
+          "admin"
+        ) {
+          await loadAdmin();
+        } else {
+          await loadMe();
+        }
+
+        location.hash =
+          currentUser?.role === "admin"
+            ? "admin"
+            : "dashboard";
+
+        return;
+      }
+
+      if (type === "logout") {
+        logout();
+        return;
+      }
     }
 
-    if (action === "logout") {
-      logout();
-      return;
-    }
-
-    const serviceElement =
-      event.target.closest(
-        "[data-order]"
-      );
-
-    if (serviceElement) {
-      createOrder(
-        serviceElement.dataset.order
-      );
-
-      return;
-    }
-
-    const payElement =
-      event.target.closest(
-        "[data-pay]"
-      );
-
-    if (payElement) {
-      pay(
-        payElement.dataset.pay
-      );
-
-      return;
-    }
-
-    const switchElement =
+    const switchButton =
       event.target.closest(
         "[data-switch]"
       );
 
-    if (switchElement) {
-      showAuth(
-        switchElement.dataset.switch
-      );
+    if (switchButton) {
+
+      if (
+        switchButton.dataset.switch ===
+        "register"
+      ) {
+        openRegister();
+      } else {
+        openLogin();
+      }
 
       return;
     }
 
-    const submitElement =
+    const submit =
       event.target.closest(
         "[data-submit]"
       );
 
-    if (submitElement) {
-      const type =
-        submitElement.dataset.submit;
+    if (submit) {
 
-      if (type === "login") {
-        login();
+      if (
+        submit.dataset.submit ===
+        "login"
+      ) {
+        await login();
       }
 
       if (
-        type === "register"
+        submit.dataset.submit ===
+        "register"
       ) {
-        register();
+        await register();
       }
 
       return;
     }
 
-    const saveElement =
+    const service =
       event.target.closest(
-        "[data-save]"
+        "[data-order]"
       );
 
-    if (saveElement) {
-      saveAdmin(
-        saveElement.dataset.save
+    if (service) {
+      createOrder(
+        service.dataset.order
       );
 
       return;
     }
 
-    const orderElement =
+    const payment =
+      event.target.closest(
+        "[data-pay]"
+      );
+
+    if (payment) {
+      await pay(
+        payment.dataset.pay
+      );
+
+      return;
+    }
+
+    const order =
       event.target.closest(
         "[data-order-id]"
       );
 
-    if (orderElement) {
+    if (order) {
+
       const id =
         String(
-          orderElement.dataset.orderId
+          order.dataset.orderId
         );
 
-      const order =
-        (
-          window.__orders ||
-          []
-        ).find(
+      const selected =
+        currentOrders.find(
           (item) =>
-            String(item.id) ===
-            id
+            String(item.id) === id
         );
 
-      if (
-        order &&
-        $("#statusPanel")
-      ) {
-        $("#statusPanel").innerHTML =
-          statusHTML(order);
+      if (selected) {
+        renderSelectedStatus(
+          selected
+        );
       }
+
+      return;
+    }
+
+    const save =
+      event.target.closest(
+        "[data-save]"
+      );
+
+    if (save) {
+      await saveAdmin(
+        save.dataset.save
+      );
     }
   }
 );
+
+/* =========================
+   LOGOUT
+========================= */
+
+function logout() {
+  token = null;
+  currentUser = null;
+  currentOrders = [];
+
+  localStorage.removeItem(
+    "r6_token"
+  );
+
+  updateNav();
+
+  location.hash = "home";
+
+  showToast(
+    "Signed out."
+  );
+}
 
 /* =========================
    ADMIN REFRESH
@@ -1683,8 +1662,10 @@ const refreshAdmin =
   $("#refreshAdmin");
 
 if (refreshAdmin) {
-  refreshAdmin.onclick =
-    loadAdmin;
+  refreshAdmin.addEventListener(
+    "click",
+    loadAdmin
+  );
 }
 
 /* =========================
@@ -1693,91 +1674,49 @@ if (refreshAdmin) {
 
 window.addEventListener(
   "hashchange",
-  () => {
+  async () => {
+
+    const hash =
+      location.hash;
+
     if (
-      location.hash ===
-      "#dashboard"
+      hash === "#dashboard"
     ) {
-      if (
-        me?.role === "admin"
-      ) {
-        loadAdmin();
-      } else {
-        loadMe();
+      if (!token) {
+        openLogin();
+        return;
       }
+
+      if (
+        currentUser?.role ===
+        "admin"
+      ) {
+        await loadAdmin();
+      } else {
+        await loadMe();
+      }
+
+      return;
     }
 
     if (
-      location.hash ===
-      "#auth"
+      hash === "#auth"
     ) {
-      showAuth("login");
+      openLogin();
     }
   }
 );
 
 /* =========================
-   PAYMENT RETURN
+   START
 ========================= */
 
-function handlePaymentReturn() {
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
-  const payment =
-    params.get("payment");
-
-  if (
-    payment === "success"
-  ) {
-    toast(
-      "Payment completed successfully."
-    );
-  }
-
-  if (
-    payment === "cancelled"
-  ) {
-    toast(
-      "Payment cancelled.",
-      true
-    );
-  }
-
-  if (payment) {
-    params.delete(
-      "payment"
-    );
-
-    const query =
-      params.toString();
-
-    const cleanUrl =
-      window.location.pathname +
-      (query
-        ? "?" + query
-        : "") +
-      "#dashboard";
-
-    window.history.replaceState(
-      {},
-      document.title,
-      cleanUrl
-    );
-  }
-}
-
-/* =========================
-   START APPLICATION
-========================= */
-
-handlePaymentReturn();
+console.log(
+  "[R6R] app.js loaded successfully."
+);
 
 if (token) {
   loadMe();
 } else {
-  nav();
+  updateNav();
 }
-```
