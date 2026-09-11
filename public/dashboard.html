@@ -1,549 +1,486 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#010305">
-  <title>R6 Recoveries — Tactical Orders</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>R6 Recoveries — Tactical Orders</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/styles.css">
 
-  <style>
-    .dashboardPage {
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at 15% 15%, rgba(54,230,161,.08), transparent 28%),
-        radial-gradient(circle at 85% 20%, rgba(34,184,255,.10), transparent 30%),
-        radial-gradient(circle at 70% 80%, rgba(139,92,255,.10), transparent 32%),
-        #010305;
-    }
+<style>
+body {
+  background:#010305;
+  color:#edf9ff;
+}
 
-    .dashTop {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      border-bottom: 1px solid rgba(34,184,255,.18);
-      background: rgba(1,5,9,.78);
-      backdrop-filter: blur(20px);
-    }
+.dashboard {
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 15% 10%,rgba(54,230,161,.10),transparent 28%),
+    radial-gradient(circle at 85% 15%,rgba(34,184,255,.10),transparent 30%),
+    radial-gradient(circle at 70% 80%,rgba(139,92,255,.10),transparent 35%),
+    #010305;
+}
 
-    .dashNav {
-      min-height: 78px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
+.dashHeader {
+  border-bottom:1px solid rgba(34,184,255,.20);
+  background:rgba(1,5,9,.85);
+  backdrop-filter:blur(18px);
+}
 
-    .dashBrand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: #edf9ff;
-      text-decoration: none;
-    }
+.dashNav {
+  min-height:78px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
 
-    .dashBrandMark {
-      width: 42px;
-      height: 42px;
-      display: grid;
-      place-items: center;
-      border: 1px solid #36e6a1;
-      border-radius: 9px;
-      color: #b7ffe2;
-      font: 900 19px "Barlow Condensed";
-      box-shadow:
-        0 0 26px rgba(54,230,161,.15),
-        inset 0 0 18px rgba(54,230,161,.06);
-    }
+.brand {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  color:white;
+  text-decoration:none;
+}
 
-    .dashBrandText {
-      font: 900 20px "Barlow Condensed";
-      letter-spacing: 2px;
-    }
+.brandMark {
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border:1px solid #36e6a1;
+  border-radius:8px;
+  color:#b7ffe2;
+  font:900 19px "Barlow Condensed";
+  box-shadow:0 0 25px rgba(54,230,161,.18);
+}
 
-    .dashBrandText small {
-      display: block;
-      color: #61766d;
-      font: 700 7px "DM Mono";
-      letter-spacing: 1.5px;
-      margin-top: 2px;
-    }
+.brandText {
+  font:900 20px "Barlow Condensed";
+  letter-spacing:2px;
+}
 
-    .dashNavActions {
-      display: flex;
-      gap: 8px;
-    }
+.brandText small {
+  display:block;
+  color:#607783;
+  font:700 7px "DM Mono";
+  letter-spacing:1.5px;
+}
 
-    .dashHero {
-      padding: 70px 0 30px;
-    }
+.dashHero {
+  padding:70px 0 35px;
+}
 
-    .dashHeroGrid {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 30px;
-      align-items: end;
-    }
+.kicker {
+  color:#6f8795;
+  font:700 8px "DM Mono";
+  letter-spacing:1.5px;
+}
 
-    .dashKicker {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      color: #708b9a;
-      font: 700 8px "DM Mono";
-      letter-spacing: 1.5px;
-    }
+.kicker span {
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#36e6a1;
+  box-shadow:0 0 15px #36e6a1;
+  margin-right:8px;
+}
 
-    .dashKicker i {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #36e6a1;
-      box-shadow: 0 0 14px #36e6a1;
-    }
+.dashHero h1 {
+  margin:14px 0 0;
+  font:900 clamp(60px,8vw,110px)/.85 "Barlow Condensed";
+}
 
-    .dashHero h1 {
-      font: 900 clamp(64px,8vw,115px)/.86 "Barlow Condensed";
-      letter-spacing: -2px;
-      margin: 15px 0 0;
-    }
+.dashHero h1 span {
+  color:#aeeaff;
+  text-shadow:0 0 30px rgba(34,184,255,.35);
+}
 
-    .dashHero h1 span {
-      color: #b9ebff;
-      text-shadow: 0 0 35px rgba(34,184,255,.28);
-    }
+.dashHero p {
+  max-width:650px;
+  color:#7d929f;
+  font-size:11px;
+  line-height:1.8;
+  margin-top:18px;
+}
 
-    .dashHero p {
-      max-width: 650px;
-      color: #8197a7;
-      font-size: 11px;
-      line-height: 1.85;
-      margin: 18px 0 0;
-    }
+.stats {
+  display:grid;
+  grid-template-columns:repeat(3,120px);
+  gap:8px;
+  margin-top:30px;
+}
 
-    .dashTelemetry {
-      display: grid;
-      grid-template-columns: repeat(3, 120px);
-      gap: 8px;
-    }
+.stat {
+  padding:15px;
+  border:1px solid rgba(34,184,255,.18);
+  border-radius:12px;
+  background:rgba(4,13,20,.70);
+}
 
-    .telemetryBox {
-      border: 1px solid rgba(34,184,255,.16);
-      border-radius: 12px;
-      padding: 15px;
-      background: rgba(4,13,20,.62);
-      box-shadow:
-        inset 0 1px rgba(255,255,255,.08),
-        0 18px 60px rgba(0,0,0,.28);
-    }
+.stat strong {
+  display:block;
+  color:#b7ffe2;
+  font:900 36px "Barlow Condensed";
+}
 
-    .telemetryBox strong {
-      display: block;
-      font: 900 34px "Barlow Condensed";
-      color: #b7ffe2;
-      text-shadow: 0 0 20px rgba(54,230,161,.18);
-    }
+.stat span {
+  color:#617884;
+  font:700 7px "DM Mono";
+  letter-spacing:1px;
+}
 
-    .telemetryBox span {
-      display: block;
-      margin-top: 2px;
-      color: #637b88;
-      font: 700 7px "DM Mono";
-      letter-spacing: 1px;
-    }
+.ordersTitle {
+  margin:35px 0 15px;
+}
 
-    .ordersHeader {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      margin: 28px 0 13px;
-    }
+.ordersTitle h2 {
+  margin:5px 0 0;
+  font:900 40px "Barlow Condensed";
+  letter-spacing:1px;
+}
 
-    .ordersHeader h2 {
-      font: 900 38px "Barlow Condensed";
-      margin: 0;
-      letter-spacing: 1px;
-    }
+.orders {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  padding-bottom:60px;
+}
 
-    .ordersHeader p {
-      margin: 0;
-      color: #637b88;
-      font: 700 7px "DM Mono";
-      letter-spacing: 1px;
-    }
+.holo {
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(34,184,255,.25);
+  border-radius:18px;
+  background:
+    linear-gradient(135deg,rgba(5,18,27,.94),rgba(3,8,14,.88));
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.09),
+    0 25px 70px rgba(0,0,0,.45),
+    0 0 35px rgba(34,184,255,.06);
+  transition:.25s;
+}
 
-    .holoGrid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 13px;
-      padding-bottom: 55px;
-    }
+.holo:hover {
+  transform:translateY(-4px);
+  border-color:rgba(54,230,161,.50);
+  box-shadow:
+    0 25px 80px rgba(0,0,0,.55),
+    0 0 45px rgba(54,230,161,.10);
+}
 
-    .holoCard {
-      position: relative;
-      overflow: hidden;
-      min-height: 260px;
-      border: 1px solid rgba(34,184,255,.23);
-      border-radius: 18px;
-      background:
-        linear-gradient(135deg, rgba(4,16,25,.90), rgba(5,10,17,.74)),
-        radial-gradient(circle at 78% 30%, rgba(34,184,255,.10), transparent 30%);
-      box-shadow:
-        inset 0 1px rgba(255,255,255,.10),
-        inset 0 -1px rgba(0,0,0,.35),
-        0 25px 85px rgba(0,0,0,.42),
-        0 0 45px rgba(34,184,255,.045);
-      transition: .25s;
-    }
+.holo::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(
+      rgba(34,184,255,.025) 1px,
+      transparent 1px
+    );
+  background-size:100% 5px;
+}
 
-    .holoCard:hover {
-      transform: translateY(-4px);
-      border-color: rgba(54,230,161,.45);
-      box-shadow:
-        inset 0 1px rgba(255,255,255,.13),
-        0 28px 95px rgba(0,0,0,.48),
-        0 0 60px rgba(54,230,161,.08);
-    }
+.holo::after {
+  content:"";
+  position:absolute;
+  left:-20%;
+  right:-20%;
+  top:0;
+  height:2px;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    rgba(34,184,255,.55),
+    transparent
+  );
+  box-shadow:0 0 20px rgba(34,184,255,.40);
+  animation:scan 4s linear infinite;
+}
 
-    .holoCard::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background:
-        linear-gradient(90deg,
-          transparent 0 49.5%,
-          rgba(34,184,255,.035) 50%,
-          transparent 50.5%),
-        linear-gradient(transparent 0 49.5%,
-          rgba(54,230,161,.03) 50%,
-          transparent 50.5%);
-    }
+.holoInner {
+  position:relative;
+  z-index:2;
+  padding:22px;
+}
 
-    .holoCard::after {
-      content: "";
-      position: absolute;
-      left: -20%;
-      right: -20%;
-      height: 2px;
-      top: 15%;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(34,184,255,.5),
-        transparent
-      );
-      box-shadow: 0 0 18px rgba(34,184,255,.35);
-      animation: holoScan 4s linear infinite;
-      pointer-events: none;
-    }
+.holoTop {
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+}
 
-    .holoInner {
-      position: relative;
-      z-index: 2;
-      padding: 21px;
-    }
+.orderId {
+  color:#66818f;
+  font:700 8px "DM Mono";
+  letter-spacing:1.4px;
+}
 
-    .holoTop {
-      display: flex;
-      justify-content: space-between;
-      gap: 15px;
-      align-items: start;
-    }
+.service {
+  margin-top:7px;
+  font:900 28px "Barlow Condensed";
+}
 
-    .holoId {
-      color: #678797;
-      font: 700 8px "DM Mono";
-      letter-spacing: 1.4px;
-    }
+.status {
+  height:max-content;
+  padding:7px 9px;
+  border:1px solid rgba(54,230,161,.30);
+  border-radius:999px;
+  color:#b7ffe2;
+  background:rgba(54,230,161,.06);
+  font:800 7px "DM Mono";
+  white-space:nowrap;
+}
 
-    .holoTitle {
-      margin-top: 7px;
-      font: 900 25px/1 "Barlow Condensed";
-      letter-spacing: 1px;
-    }
+.meta {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-top:25px;
+}
 
-    .holoStatus {
-      font: 800 7px "DM Mono";
-      letter-spacing: .8px;
-      padding: 6px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(54,230,161,.28);
-      color: #b7ffe2;
-      background: rgba(54,230,161,.05);
-      white-space: nowrap;
-    }
+.metaBox {
+  border-top:1px solid rgba(34,184,255,.15);
+  padding-top:9px;
+}
 
-    .holoMeta {
-      display: grid;
-      grid-template-columns: repeat(3,1fr);
-      gap: 8px;
-      margin-top: 24px;
-    }
+.metaBox b {
+  display:block;
+  color:#58717f;
+  font:700 7px "DM Mono";
+  letter-spacing:1px;
+}
 
-    .holoMetaBox {
-      border-top: 1px solid rgba(34,184,255,.13);
-      padding-top: 9px;
-    }
+.metaBox span {
+  display:block;
+  margin-top:5px;
+  color:#c6eaf8;
+  font:800 13px "Barlow Condensed";
+}
 
-    .holoMetaBox b {
-      display: block;
-      color: #5e7786;
-      font: 700 7px "DM Mono";
-      letter-spacing: 1px;
-    }
+.paid {
+  color:#b7ffe2 !important;
+  text-shadow:0 0 15px rgba(54,230,161,.25);
+}
 
-    .holoMetaBox span {
-      display: block;
-      color: #c4e9f7;
-      font: 800 12px "Barlow Condensed";
-      margin-top: 4px;
-    }
+.progressLabel {
+  display:flex;
+  justify-content:space-between;
+  margin-top:21px;
+  color:#607986;
+  font:700 7px "DM Mono";
+}
 
-    .paymentPaid {
-      color: #b7ffe2 !important;
-      text-shadow: 0 0 14px rgba(54,230,161,.25);
-    }
+.progressLabel strong {
+  color:#b7ffe2;
+}
 
-    .paymentUnpaid {
-      color: #c7b7ff !important;
-    }
+.progress {
+  height:5px;
+  margin-top:7px;
+  background:#020609;
+  border:1px solid rgba(34,184,255,.18);
+  border-radius:999px;
+  overflow:hidden;
+}
 
-    .progressLabel {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 20px;
-      color: #607986;
-      font: 700 7px "DM Mono";
-      letter-spacing: .7px;
-    }
+.progress div {
+  height:100%;
+  background:linear-gradient(
+    90deg,
+    #8b5cff,
+    #22b8ff,
+    #36e6a1
+  );
+  box-shadow:0 0 15px rgba(34,184,255,.45);
+}
 
-    .progressLabel b {
-      color: #b7ffe2;
-    }
+.details {
+  margin-top:20px;
+  padding-top:15px;
+  border-top:1px solid rgba(34,184,255,.12);
+  color:#8196a3;
+  font-size:10px;
+  line-height:1.7;
+}
 
-    .progressTrack {
-      height: 5px;
-      margin-top: 7px;
-      border: 1px solid rgba(34,184,255,.16);
-      background: rgba(0,0,0,.38);
-      border-radius: 999px;
-      overflow: hidden;
-    }
+.details b {
+  color:#7de8c0;
+  font:700 7px "DM Mono";
+  letter-spacing:1px;
+}
 
-    .progressFill {
-      height: 100%;
-      background: linear-gradient(
-        90deg,
-        #8b5cff,
-        #22b8ff,
-        #36e6a1
-      );
-      box-shadow: 0 0 16px rgba(34,184,255,.42);
-    }
+.empty {
+  grid-column:1/-1;
+  padding:60px;
+  text-align:center;
+  border:1px dashed rgba(34,184,255,.22);
+  border-radius:18px;
+}
 
-    .holoBottom {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      margin-top: 19px;
-      color: #5f7682;
-      font: 700 7px "DM Mono";
-    }
+.empty h2 {
+  margin:0;
+  font:900 42px "Barlow Condensed";
+  color:#aeeaff;
+}
 
-    .holoBottom strong {
-      color: #91b7c7;
-    }
+.empty p {
+  color:#718792;
+  font-size:10px;
+}
 
-    .holoDetails {
-      display: none;
-      margin-top: 18px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(34,184,255,.12);
-      color: #8197a7;
-      font-size: 10px;
-      line-height: 1.75;
-    }
+@keyframes scan {
+  0% { transform:translateY(0); opacity:0; }
+  10% { opacity:1; }
+  90% { opacity:.7; }
+  100% { transform:translateY(260px); opacity:0; }
+}
 
-    .holoCard.open .holoDetails {
-      display: block;
-    }
+@media(max-width:750px) {
+  .orders {
+    grid-template-columns:1fr;
+  }
 
-    .emptyHolo {
-      grid-column: 1/-1;
-      padding: 55px 25px;
-      text-align: center;
-      border: 1px dashed rgba(34,184,255,.2);
-      border-radius: 18px;
-      background: rgba(4,12,19,.45);
-    }
+  .stats {
+    grid-template-columns:repeat(3,1fr);
+    width:100%;
+  }
+}
 
-    .emptyHolo strong {
-      font: 900 42px "Barlow Condensed";
-      color: #b9ebff;
-    }
+@media(max-width:480px) {
+  .stats {
+    grid-template-columns:1fr 1fr;
+  }
 
-    .emptyHolo p {
-      color: #718692;
-      font-size: 10px;
-      line-height: 1.8;
-      margin-bottom: 22px;
-    }
-
-    .dashFooter {
-      padding: 26px 0 45px;
-      border-top: 1px solid rgba(34,184,255,.12);
-      color: #506774;
-      font: 7px "DM Mono";
-      letter-spacing: 1.2px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    @keyframes holoScan {
-      0% { transform: translateY(0); opacity: 0; }
-      10% { opacity: 1; }
-      85% { opacity: .8; }
-      100% { transform: translateY(220px); opacity: 0; }
-    }
-
-    @media(max-width:760px) {
-      .dashHeroGrid {
-        grid-template-columns: 1fr;
-      }
-
-      .dashTelemetry {
-        grid-template-columns: repeat(3,1fr);
-      }
-
-      .holoGrid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media(max-width:480px) {
-      .dashTelemetry {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .dashTelemetry .telemetryBox:last-child {
-        grid-column: 1/-1;
-      }
-
-      .holoMeta {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .dashFooter {
-        display: block;
-        line-height: 2;
-      }
-    }
-  </style>
+  .meta {
+    grid-template-columns:1fr 1fr;
+  }
+}
+</style>
 </head>
 
-<body class="dashboardPage">
+<body>
 
-<header class="dashTop">
+<div class="dashboard">
+
+<header class="dashHeader">
   <div class="shell dashNav">
 
-    <a class="dashBrand" href="/">
-      <span class="dashBrandMark">R6</span>
-      <span class="dashBrandText">
+    <a href="/" class="brand">
+      <div class="brandMark">R6</div>
+
+      <div class="brandText">
         RECOVERIES
         <small>PRIVATE OPERATIONS / ORDER NETWORK</small>
-      </span>
+      </div>
     </a>
 
-    <div class="dashNavActions">
-      <a class="btn btn-ghost btn-small" href="/">BACK TO SITE</a>
-      <button class="btn btn-small" id="signOut">SIGN OUT</button>
-    </div>
+    <a href="/" class="btn btn-ghost btn-small">
+      BACK TO SITE
+    </a>
 
   </div>
 </header>
 
 <main>
 
-  <section class="dashHero">
-    <div class="shell dashHeroGrid">
+<section class="dashHero">
+  <div class="shell">
 
-      <div>
-        <div class="dashKicker">
-          <i></i>
-          SECURE CUSTOMER CHANNEL / LIVE
-        </div>
+    <div class="kicker">
+      <span></span>
+      SECURE CUSTOMER CHANNEL / LIVE
+    </div>
 
-        <h1>
-          YOUR <span>OPERATIONS.</span>
-        </h1>
+    <h1>
+      YOUR <span>OPERATIONS.</span>
+    </h1>
 
-        <p>
-          Track every R6 Recoveries order from payment confirmation
-          through active recovery. Select an operation to inspect
-          its current state and recovery notes.
-        </p>
+    <p>
+      Track your R6 Recoveries orders, payment status,
+      recovery progress and recovery notes from one secure
+      tactical command interface.
+    </p>
+
+    <div class="stats">
+
+      <div class="stat">
+        <strong id="total">0</strong>
+        <span>TOTAL ORDERS</span>
       </div>
 
-      <div class="dashTelemetry">
+      <div class="stat">
+        <strong id="active">0</strong>
+        <span>ACTIVE</span>
+      </div>
 
-        <div class="telemetryBox">
-          <strong id="totalOrders">0</strong>
-          <span>TOTAL ORDERS</span>
-        </div>
-
-        <div class="telemetryBox">
-          <strong id="activeOrders">0</strong>
-          <span>ACTIVE</span>
-        </div>
-
-        <div class="telemetryBox">
-          <strong id="paidOrders">0</strong>
-          <span>PAID</span>
-        </div>
-
+      <div class="stat">
+        <strong id="paid">0</strong>
+        <span>PAID</span>
       </div>
 
     </div>
-  </section>
 
-  <section>
-    <div class="shell">
+  </div>
+</section>
 
-      <div class="ordersHeader">
-        <div>
-          <div class="dashKicker">
-            <i></i>
-            ORDER MANIFEST
-          </div>
+<section>
+<div class="shell">
 
-          <h2>MY ORDERS</h2>
-        </div>
-
-        <p id="lastSync">SYNCING...</p>
-      </div>
-
-      <div class="holoGrid" id="orderGrid"></div>
-
+  <div class="ordersTitle">
+    <div class="kicker">
+      <span></span>
+      ORDER MANIFEST
     </div>
-  </section>
+
+    <h2>MY ORDERS</h2>
+  </div>
+
+  <div class="orders" id="orders">
+    <div class="empty">
+      <h2>LOADING OPERATIONS...</h2>
+      <p>Connecting to secure order network.</p>
+    </div>
+  </div>
+
+</div>
+</section>
 
 </main>
 
 <footer>
-  <div class="shell dashFooter">
-    <span>© 2026 R6 RECOVERIES</span>
-    <strong>TACTICAL ORDER NETWORK / SECURE SESSION</strong>
+  <div class="shell">
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      gap:20px;
+      padding:25px 0 45px;
+      border-top:1px solid rgba(34,184,255,.12);
+      color:#506774;
+      font:7px DM Mono;
+      letter-spacing:1.2px;
+    ">
+      <span>© 2026 R6 RECOVERIES</span>
+      <strong>TACTICAL ORDER NETWORK / SECURE SESSION</strong>
+    </div>
   </div>
 </footer>
 
+</div>
+
 <script>
+
 const token = localStorage.getItem("r6_token");
+
+if (!token) {
+  window.location.href = "/#auth";
+}
 
 const statuses = [
   "received",
@@ -554,264 +491,209 @@ const statuses = [
   "completed"
 ];
 
-const $ = selector => document.querySelector(selector);
-
 function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;"
-  }[char]));
+  return String(value ?? "").replace(/[&<>"']/g, function(char) {
+    return {
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#039;"
+    }[char];
+  });
 }
 
-function prettyStatus(status) {
+function statusText(status) {
   return String(status || "received")
-    .replaceAll("_", " ")
+    .replaceAll("_"," ")
     .toUpperCase();
 }
 
-function progress(status) {
+function getProgress(status) {
+
   const index = statuses.indexOf(status);
 
-  if (status === "cancelled") {
-    return 0;
-  }
+  if (index < 0) return 0;
 
-  if (index < 0) {
-    return 0;
-  }
-
-  return Math.round(((index + 1) / statuses.length) * 100);
+  return Math.round(
+    ((index + 1) / statuses.length) * 100
+  );
 }
 
-async function api(path, options = {}) {
+async function loadOrders() {
 
-  const response = await fetch("/api" + path, {
-    ...options,
-    headers: {
-      "Authorization": "Bearer " + token,
-      "Content-Type": "application/json",
-      ...(options.headers || {})
+  try {
+
+    const response = await fetch("/api/me", {
+      headers: {
+        "Authorization": "Bearer " + token
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("Unable to load account.");
     }
-  });
 
-  let data = {};
+    const data = await response.json();
 
-  try {
-    data = await response.json();
-  } catch {}
+    const orders = data.orders || [];
 
-  if (!response.ok) {
-    throw new Error(data.error || "Request failed.");
-  }
+    document.getElementById("total").textContent =
+      orders.length;
 
-  return data;
-}
+    document.getElementById("paid").textContent =
+      orders.filter(function(order) {
+        return order.payment_status === "paid";
+      }).length;
 
-function renderDashboard(data) {
+    document.getElementById("active").textContent =
+      orders.filter(function(order) {
+        return [
+          "paid",
+          "reviewing",
+          "in_progress",
+          "ready"
+        ].includes(order.status);
+      }).length;
 
-  const orders = data.orders || [];
-  const user = data.user || {};
+    if (!orders.length) {
 
-  $("#totalOrders").textContent = orders.length;
-
-  $("#activeOrders").textContent =
-    orders.filter(order =>
-      ["paid", "reviewing", "in_progress", "ready"]
-        .includes(order.status)
-    ).length;
-
-  $("#paidOrders").textContent =
-    orders.filter(order =>
-      order.payment_status === "paid"
-    ).length;
-
-  $("#lastSync").textContent =
-    "LAST SYNC / " + new Date().toLocaleTimeString();
-
-  if (!orders.length) {
-
-    $("#orderGrid").innerHTML = `
-      <div class="emptyHolo">
-
-        <strong>NO OPERATIONS</strong>
-
-        <p>
-          Your submitted recoveries will appear here
-          as tactical order cards.
-        </p>
-
-        <a class="btn btn-hot" href="/#services">
-          LAUNCH AN OPERATION →
-        </a>
-
-      </div>
-    `;
-
-    return;
-  }
-
-  $("#orderGrid").innerHTML = orders.map((order, index) => {
-
-    const paid = order.payment_status === "paid";
-    const percent = progress(order.status);
-
-    return `
-      <article
-        class="holoCard ${index === 0 ? "open" : ""}"
-        data-order="${order.id}"
-      >
-
-        <div class="holoInner">
-
-          <div class="holoTop">
-
-            <div>
-
-              <div class="holoId">
-                ORDER #${String(order.id).padStart(4, "0")}
-                /
-                ${esc(user.name || "OPERATOR").toUpperCase()}
-              </div>
-
-              <div class="holoTitle">
-                ${esc(order.service)}
-              </div>
-
-            </div>
-
-            <span class="holoStatus">
-              ${prettyStatus(order.status)}
-            </span>
-
-          </div>
-
-          <div class="holoMeta">
-
-            <div class="holoMetaBox">
-              <b>PAYMENT</b>
-              <span class="${paid ? "paymentPaid" : "paymentUnpaid"}">
-                ${paid ? "PAID ✓" : "UNPAID"}
-              </span>
-            </div>
-
-            <div class="holoMetaBox">
-              <b>PLATFORM</b>
-              <span>${esc(order.platform)}</span>
-            </div>
-
-            <div class="holoMetaBox">
-              <b>DATE</b>
-              <span>
-                ${new Date(order.created_at + "Z").toLocaleDateString()}
-              </span>
-            </div>
-
-          </div>
-
-          <div class="progressLabel">
-            <span>RECOVERY PROGRESS</span>
-            <b>${percent}%</b>
-          </div>
-
-          <div class="progressTrack">
-            <div
-              class="progressFill"
-              style="width:${percent}%"
-            ></div>
-          </div>
-
-          <div class="holoBottom">
-
-            <span>
-              CLICK TO INSPECT / DETAILS
-            </span>
-
-            <strong>
-              ${esc(order.r6_username || "R6 USERNAME NOT PROVIDED")}
-            </strong>
-
-          </div>
-
-          <div class="holoDetails">
-
-            <b>OPERATION DETAILS</b>
-            <br>
-
-            ${esc(order.details || "No additional details provided.")}
-
-            ${
-              order.admin_note
-              ? `
-                <br><br>
-                <b>RECOVERY NOTE</b>
-                <br>
-                ${esc(order.admin_note)}
-              `
-              : ""
-            }
-
-            <br><br>
-
-            <b>LAST UPDATED</b>
-            <br>
-
-            ${new Date(order.updated_at + "Z").toLocaleString()}
-
-          </div>
-
+      document.getElementById("orders").innerHTML = `
+        <div class="empty">
+          <h2>NO ORDERS FOUND</h2>
+          <p>
+            Your submitted recovery operations will appear
+            here once an order has been created.
+          </p>
         </div>
+      `;
 
-      </article>
-    `;
+      return;
+    }
 
-  }).join("");
-}
+    document.getElementById("orders").innerHTML =
+      orders.map(function(order) {
 
-async function loadDashboard() {
+        const paid =
+          order.payment_status === "paid";
 
-  if (!token) {
-    window.location.href = "/#auth";
-    return;
-  }
+        const progress =
+          getProgress(order.status);
 
-  try {
+        return `
+          <article class="holo">
 
-    const data = await api("/me");
+            <div class="holoInner">
 
-    renderDashboard(data);
+              <div class="holoTop">
+
+                <div>
+
+                  <div class="orderId">
+                    ORDER #${String(order.id).padStart(4,"0")}
+                  </div>
+
+                  <div class="service">
+                    ${esc(order.service)}
+                  </div>
+
+                </div>
+
+                <div class="status">
+                  ${statusText(order.status)}
+                </div>
+
+              </div>
+
+              <div class="meta">
+
+                <div class="metaBox">
+                  <b>PAYMENT</b>
+                  <span class="${paid ? "paid" : ""}">
+                    ${paid ? "PAID ✓" : "UNPAID"}
+                  </span>
+                </div>
+
+                <div class="metaBox">
+                  <b>PLATFORM</b>
+                  <span>
+                    ${esc(order.platform)}
+                  </span>
+                </div>
+
+                <div class="metaBox">
+                  <b>DATE</b>
+                  <span>
+                    ${new Date(
+                      order.created_at + "Z"
+                    ).toLocaleDateString()}
+                  </span>
+                </div>
+
+              </div>
+
+              <div class="progressLabel">
+                <span>RECOVERY PROGRESS</span>
+                <strong>${progress}%</strong>
+              </div>
+
+              <div class="progress">
+                <div style="width:${progress}%"></div>
+              </div>
+
+              <div class="details">
+
+                <b>R6 USERNAME</b><br>
+                ${esc(order.r6_username || "Not provided")}
+
+                <br><br>
+
+                <b>DISCORD</b><br>
+                ${esc(order.discord_username || "Not provided")}
+
+                <br><br>
+
+                <b>ORDER DETAILS</b><br>
+                ${esc(order.details || "No details provided.")}
+
+                ${
+                  order.admin_note
+                  ? `
+                    <br><br>
+                    <b>RECOVERY NOTE</b><br>
+                    ${esc(order.admin_note)}
+                  `
+                  : ""
+                }
+
+              </div>
+
+            </div>
+
+          </article>
+        `;
+
+      }).join("");
 
   } catch (error) {
 
-    localStorage.removeItem("r6_token");
-    window.location.href = "/#auth";
+    document.getElementById("orders").innerHTML = `
+      <div class="empty">
+        <h2>CONNECTION ERROR</h2>
+        <p>
+          We couldn't load your orders. Please refresh
+          the page and try again.
+        </p>
+      </div>
+    `;
 
   }
 }
 
-document.addEventListener("click", event => {
+loadOrders();
 
-  const card = event.target.closest("[data-order]");
+setInterval(loadOrders,15000);
 
-  if (card) {
-    card.classList.toggle("open");
-  }
-
-});
-
-$("#signOut").addEventListener("click", () => {
-
-  localStorage.removeItem("r6_token");
-
-  window.location.href = "/#home";
-
-});
-
-loadDashboard();
-
-setInterval(loadDashboard, 15000);
 </script>
 
 </body>
