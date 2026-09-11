@@ -1,12 +1,12 @@
 {
   "name": "r6-recoveries",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "private": true,
-  "description": "R6 Recoveries full-stack web app prepared for production deployment",
+  "description": "R6 Recoveries full-stack web app",
   "type": "module",
   "scripts": {
-    "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "engines": {
     "node": ">=20"
@@ -19,6 +19,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
+    "pg": "^8.16.3",
     "stripe": "^18.5.0"
   }
 }
