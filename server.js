@@ -78,7 +78,14 @@ const upload = multer({
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(morgan("tiny"));
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({
+  limit: "1mb",
+  verify: (req, res, buf) => {
+    if (req.originalUrl === "/api/payments/webhook") {
+      req.rawBody = Buffer.from(buf);
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -285,7 +292,7 @@ app.post("/api/payments/webhook", express.raw({ type: "application/json" }), asy
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(200).send("Webhook disabled.");
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    const event = stripe.webhooks.constructEvent(req.body, req.headers["stripe-signature"], process.env.STRIPE_WEBHOOK_SECRET);
+    const event = stripe.webhooks.constructEvent(req.rawBody, req.headers["stripe-signature"], process.env.STRIPE_WEBHOOK_SECRET);
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const orderId = Number(session.metadata?.order_id);
