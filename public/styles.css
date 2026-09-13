@@ -3659,3 +3659,59 @@ body::before{background:linear-gradient(90deg,transparent,rgba(255,90,0,.018),tr
 /* Remove legacy rainbow branding completely */
 .brand{animation:brandPulse 2.8s ease-in-out infinite!important;background:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important;-webkit-text-fill-color:currentColor!important;color:#f2f0ed!important}
 .brand small{color:#766e67!important;-webkit-text-fill-color:#766e67!important}
+
+
+/* =========================================================
+   R6R CORE 1.0 // PRODUCT INTEGRATION
+   Scoped additions only — existing functional styles remain intact.
+   ========================================================= */
+.coreProductSection{position:relative;overflow:hidden}
+.coreProductSection:before{content:"";position:absolute;inset:8% -20% auto auto;width:620px;height:620px;border-radius:50%;background:radial-gradient(circle,rgba(255,90,0,.11),rgba(255,90,0,0) 68%);pointer-events:none}
+.coreHead{position:relative;z-index:1}
+.coreProductGrid{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:22px;align-items:stretch}
+.coreProductCopy,.coreScreen{position:relative;padding:22px;border-color:#2d2d2d!important}
+.coreProductCopy:after{content:"";position:absolute;left:0;top:0;width:92px;height:2px;background:#ff5a00;box-shadow:0 0 18px rgba(255,90,0,.55)}
+.coreStatusLine{display:flex;align-items:center;gap:9px;padding-bottom:16px;border-bottom:1px solid #242424;font-size:11px;letter-spacing:.13em}
+.coreStatusLine em{margin-left:auto;color:#888;font-style:normal}
+.corePulse{width:8px;height:8px;border-radius:50%;background:#ff5a00;box-shadow:0 0 0 5px rgba(255,90,0,.1),0 0 16px rgba(255,90,0,.65);animation:corePulse 1.8s infinite}
+@keyframes corePulse{50%{box-shadow:0 0 0 9px rgba(255,90,0,0),0 0 22px rgba(255,90,0,.8)}}
+.coreProductCopy h3{font-size:clamp(27px,3vw,46px);line-height:.98;margin:24px 0 13px;letter-spacing:-.04em}
+.coreProductCopy>p{color:#aaa;line-height:1.7;max-width:680px}
+.coreFeatureGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:20px 0}
+.coreFeatureGrid div{padding:13px;background:#0a0a0a;border:1px solid #252525;min-height:88px}
+.coreFeatureGrid b{display:block;color:#ffb000;font-size:11px;letter-spacing:.1em;margin-bottom:7px}
+.coreFeatureGrid span{display:block;color:#999;font-size:12px;line-height:1.5}
+.coreGuardrail{display:grid;gap:5px;border-left:2px solid #ff5a00;background:rgba(255,90,0,.045);padding:12px 14px;margin:18px 0}
+.coreGuardrail strong{font-size:11px;letter-spacing:.1em}
+.coreGuardrail span{font-size:12px;color:#8e8e8e;line-height:1.5}
+.coreActions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.coreActions a{text-decoration:none}
+.coreBuildNote{display:block;margin-top:12px;color:#666;font-size:9px;letter-spacing:.09em;line-height:1.5}
+.coreScreen{display:flex;flex-direction:column;background:linear-gradient(145deg,#0c0c0c,#050505)!important}
+.coreScreenTop,.coreScreenMeta{display:flex;align-items:center;gap:12px;font-size:10px;letter-spacing:.12em}
+.coreScreenTop{padding-bottom:12px}
+.coreScreenTop b{color:#ff5a00}
+.coreScreenTop em{margin-left:auto;color:#777;font-style:normal}
+.coreScreenFrame{position:relative;overflow:hidden;border:1px solid #303030;background:#030303;box-shadow:0 24px 70px rgba(0,0,0,.5);flex:1;min-height:300px}
+.coreScreenFrame:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px);background-size:100% 4px;mix-blend-mode:screen}
+.coreScreenFrame img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;background:#050505}
+.coreScreenMeta{justify-content:space-between;padding-top:12px;color:#777}
+.coreScreenMeta b{color:#d9d9d9;margin-right:5px}
+.coreFlow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:12px;align-items:center;margin-top:22px;padding:18px;border:1px solid #242424;background:#080808}
+.coreFlow div{min-height:84px}
+.coreFlow b{display:block;color:#ff5a00;font-size:11px;margin-bottom:5px}
+.coreFlow span{display:block;font-weight:800;letter-spacing:.08em;margin-bottom:5px}
+.coreFlow small{color:#777;line-height:1.45}
+.coreFlow>i{color:#444;font-style:normal}
+@media(max-width:980px){
+  .coreProductGrid{grid-template-columns:1fr}
+  .coreFlow{grid-template-columns:1fr 1fr}
+  .coreFlow>i{display:none}
+}
+@media(max-width:620px){
+  .coreFeatureGrid{grid-template-columns:1fr}
+  .coreFlow{grid-template-columns:1fr}
+  .coreScreenMeta{align-items:flex-start;flex-direction:column}
+  .coreActions{flex-direction:column}
+  .coreActions .btn{text-align:center}
+}

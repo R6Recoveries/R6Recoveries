@@ -16,7 +16,7 @@
 <div class="noise"></div><div class="scanline"></div><div id="toast"></div>
 <header class="topbar"><div class="shell nav">
 <a href="#home" class="brand"><span class="brandMark">R6</span><span>RECOVERIES<small>PRIVATE OPERATIONS</small></span></a>
-<nav class="navlinks"><a href="#services">ARMORY</a><a href="#system">SYSTEM SCAN</a><a href="#action">FIELD TESTS</a><a href="#deployment">DEPLOYMENT</a><a href="#faq">INTEL</a></nav>
+<nav class="navlinks"><a href="#services">ARMORY</a><a href="#core">R6R CORE</a><a href="#system">SYSTEM SCAN</a><a href="#action">FIELD TESTS</a><a href="#deployment">DEPLOYMENT</a><a href="#faq">INTEL</a></nav>
 <div id="navAuth"><button class="btn btn-small" data-action="login">CREATE ACCOUNT</button></div>
 </div></header>
 <main>
@@ -60,7 +60,67 @@
 <article class="serviceCard" data-card-accent="blue"><div class="cardTop"><span>SYSTEM / REBUILD</span><b>$25</b></div><h3>COMPETITIVE<br>SETUP REBUILD</h3><p>Coordinated rebuild path for players starting from a messy or inconsistent setup and wanting one documented baseline.</p><ul><li>PC + R6 assessment</li><li>Configuration baseline</li><li>Input / display review</li><li>Post-change checklist</li></ul><button class="arrowBtn" data-order="full" data-service-label="Competitive Setup Rebuild">SELECT OPERATION <span>→</span></button></article>
 <article class="serviceCard" data-card-accent="green"><div class="cardTop"><span>ANALYSIS / VOD</span><b>$10</b></div><h3>R6 VOD<br>REVIEW</h3><p>Structured gameplay analysis that turns footage into specific notes on positioning, timing, habits and decision-making.</p><ul><li>Positioning review</li><li>Decision-making notes</li><li>Habit / pattern analysis</li><li>Actionable improvement list</li></ul><button class="arrowBtn" data-order="vod" data-service-label="R6 VOD Review">SELECT OPERATION <span>→</span></button></article>
 </div></div></div></section>
-<section class="section scanSection revealSection" id="system"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 02 / SYSTEM SCAN</div><h2>SEE THE <span>SYSTEM.</span></h2></div><p>A visual map of the areas reviewed across R6 and PC performance operations.</p></div>
+
+<section class="section coreProductSection revealSection" id="core">
+  <div class="shell">
+    <div class="sectionHead coreHead">
+      <div>
+        <div class="kicker"><i></i> 02 / R6R CORE 1.0</div>
+        <h2>YOUR SYSTEM. <span>VISIBLE.</span></h2>
+      </div>
+      <p>R6R Core is the local Windows companion behind the recovery workflow: system intelligence, R6 config analysis, guarded optimization and rollback.</p>
+    </div>
+
+    <div class="coreProductGrid">
+      <div class="coreProductCopy glassPanel">
+        <div class="coreStatusLine"><span class="corePulse"></span><b>CORE 1.0 // ONLINE</b><em>LOCAL-FIRST</em></div>
+        <h3>ANALYZE BEFORE YOU CHANGE.</h3>
+        <p>Core reads the machine and Rainbow Six configuration first. It surfaces what it can explain, keeps optimization conservative, and requires a preview before any supported config write.</p>
+
+        <div class="coreFeatureGrid">
+          <div><b>SYSTEM SCAN</b><span>CPU, GPU, RAM, Windows and display intelligence.</span></div>
+          <div><b>R6 CONFIG</b><span>Detect, parse, back up and inspect GameSettings.ini.</span></div>
+          <div><b>ANALYZER+</b><span>Competitive findings with current value, recommendation and reason.</span></div>
+          <div><b>SAFE OPTIMIZER</b><span>Preview → backup → confirm → verify → rollback.</span></div>
+        </div>
+
+        <div class="coreGuardrail">
+          <strong>NO BLACK-BOX “FPS BOOST” BUTTON.</strong>
+          <span>No registry/service/driver tweaks. No guaranteed FPS claims. A zero-change preview is a valid healthy result.</span>
+        </div>
+
+        <div class="coreActions">
+          <a class="btn btn-hot" href="/downloads/R6R_Core_FINAL_1.0.zip" download>DOWNLOAD CORE 1.0 ↓</a>
+          <a class="btn btn-ghost" href="#core-demo">VIEW SOFTWARE →</a>
+        </div>
+        <small class="coreBuildNote">EARLY ACCESS WINDOWS BUILD // SOURCE PACKAGE // .NET 8 SDK REQUIRED TO RUN THIS PACKAGE</small>
+      </div>
+
+      <div class="coreScreen glassPanel" id="core-demo">
+        <div class="coreScreenTop"><span>R6R CORE</span><b>SAFE OPTIMIZER</b><em>1.0</em></div>
+        <div class="coreScreenFrame">
+          <img src="/assets/r6r-core-safe-optimizer.png" alt="R6R Core Safe Optimizer interface showing a zero-change verified preview">
+        </div>
+        <div class="coreScreenMeta">
+          <span><b>REAL APP CAPTURE</b> SAFE OPTIMIZER</span>
+          <span><b>TEST RESULT</b> 0 UNNECESSARY WRITES</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="coreFlow">
+      <div><b>01</b><span>SCAN</span><small>Read the system and locate R6 configuration.</small></div>
+      <i>→</i>
+      <div><b>02</b><span>ANALYZE</span><small>Explain relevant config findings.</small></div>
+      <i>→</i>
+      <div><b>03</b><span>PREVIEW</span><small>Show every supported proposed change first.</small></div>
+      <i>→</i>
+      <div><b>04</b><span>PROTECT</span><small>Backup, verify and keep rollback available.</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="section scanSection revealSection" id="system"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 03 / SYSTEM SCAN</div><h2>SEE THE <span>SYSTEM.</span></h2></div><p>A visual map of the areas reviewed across R6 and PC performance operations.</p></div>
 <div class="scanStage glassPanel">
   <div class="scanSweep"></div><div class="scanGridLines"></div>
   <button class="scanNode n-cpu" data-scan="CPU" data-copy="Reviews system-side load and the surrounding environment for performance friction."><i></i><b>CPU</b><small>SYSTEM LOAD</small></button>
@@ -75,19 +135,19 @@
 </div>
 <div class="scanReadout"><span>ACTIVE MODULE</span><strong id="scanTitle">R6R CORE</strong><p id="scanCopy">Select any system node to inspect what that part of the recovery process reviews.</p><b>SCAN BUS // READY</b></div>
 </div></section>
-<section class="section actionSection revealSection" id="action"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 03 / SOFTWARE IN ACTION</div><h2>FIELD <span>TESTS.</span></h2></div><p>Real clips can live here: before/after captures, optimization demonstrations and recovery walkthroughs.</p></div>
+<section class="section actionSection revealSection" id="action"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 04 / SOFTWARE IN ACTION</div><h2>FIELD <span>TESTS.</span></h2></div><p>Real clips can live here: before/after captures, optimization demonstrations and recovery walkthroughs.</p></div>
 <div class="fieldGrid">
 <article class="fieldMonitor" data-field-test><div class="monitorTop"><span>FIELD TEST // 001</span><b>AWAITING CLIP</b></div><div class="monitorScreen"><div class="monitorNoise"></div><div class="playGlyph">▶</div><strong>FPS OPTIMIZATION</strong><small>BEFORE / AFTER</small></div><div class="monitorMeta"><span>FRAME DELIVERY</span><span>ADD YOUR VIDEO</span></div></article>
 <article class="fieldMonitor" data-field-test><div class="monitorTop"><span>FIELD TEST // 002</span><b>AWAITING CLIP</b></div><div class="monitorScreen"><div class="monitorNoise"></div><div class="playGlyph">▶</div><strong>R6 CONFIG RECOVERY</strong><small>LIVE DEMONSTRATION</small></div><div class="monitorMeta"><span>CONFIGURATION</span><span>ADD YOUR VIDEO</span></div></article>
 <article class="fieldMonitor" data-field-test><div class="monitorTop"><span>FIELD TEST // 003</span><b>AWAITING CLIP</b></div><div class="monitorScreen"><div class="monitorNoise"></div><div class="playGlyph">▶</div><strong>PC PERFORMANCE</strong><small>SYSTEM TEST</small></div><div class="monitorMeta"><span>PERFORMANCE</span><span>ADD YOUR VIDEO</span></div></article>
-</div><div class="fieldNote">CLIP BAY // READY FOR YOUR REAL FOOTAGE. PLACEHOLDERS DO NOT CLAIM RESULTS.</div></div></section>
-<section class="section deploymentSection" id="deployment"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 04 / DEPLOYMENT PIPELINE</div><h2>FROM ORDER TO <span>RECOVERY.</span></h2></div><p>Four stages, with a clear handoff at every point.</p></div><div class="deploymentIntro glassPanel"><strong>HOW THE OPERATION MOVES</strong><p>The goal is not a giant list of tweaks. The goal is to identify what is relevant, apply the right scope, document the outcome and leave you with a setup you understand.</p></div><div class="processGrid detailed">
+</div><div class="fieldNote">FIELD TEST BAY // CORE 1.0 NOW HAS A REAL SAFE-OPTIMIZER CAPTURE. ADD PERFORMANCE CLIPS ONLY WHEN REAL MEASUREMENTS EXIST.</div></div></section>
+<section class="section deploymentSection" id="deployment"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 05 / DEPLOYMENT PIPELINE</div><h2>FROM ORDER TO <span>RECOVERY.</span></h2></div><p>Four stages, with a clear handoff at every point.</p></div><div class="deploymentIntro glassPanel"><strong>HOW THE OPERATION MOVES</strong><p>The goal is not a giant list of tweaks. The goal is to identify what is relevant, apply the right scope, document the outcome and leave you with a setup you understand.</p></div><div class="processGrid detailed">
 <div><b>01</b><strong>CREATE ACCOUNT</strong><p>Open your private customer profile so your recovery request, communication details and future orders stay associated with the same account.</p><span>INPUT / CUSTOMER PROFILE</span></div>
 <div><b>02</b><strong>SUBMIT ORDER</strong><p>Select the operation that matches the problem, then provide platform, R6 username, Discord and specific symptoms so the review starts with useful context.</p><span>INPUT / RECOVERY BRIEF</span></div>
 <div><b>03</b><strong>SECURE PAYMENT</strong><p>Complete checkout through the configured payment flow. The order stays tied to your customer record so payment and status can be tracked together.</p><span>INPUT / PAYMENT STATUS</span></div>
 <div><b>04</b><strong>TRACK PROGRESS</strong><p>Watch the operation move from received and paid through review, active work, ready and completed. Admin notes or status updates remain visible in the portal.</p><span>OUTPUT / LIVE STATUS</span></div>
 </div></div></section>
-<section class="section revealSection" id="faq"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 05 / SOFTWARE INTEL</div><h2>SOFTWARE <span>QUESTIONS.</span></h2></div><p>Practical answers about what the recovery and performance work actually reviews.</p></div><div class="faqGrid">
+<section class="section revealSection" id="faq"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 06 / SOFTWARE INTEL</div><h2>SOFTWARE <span>QUESTIONS.</span></h2></div><p>Practical answers about what the recovery and performance work actually reviews.</p></div><div class="faqGrid">
 <details open><summary>What does the FPS Optimization operation actually review?</summary><p>It focuses on the PC and R6 settings most likely to affect frame stability, background load and frame-time consistency, including Windows performance settings, GPU/game configuration and background processes.</p></details>
 <details><summary>What parts of my Rainbow Six configuration are checked?</summary><p>Depending on the operation, the review can cover sensitivity and ADS settings, display and resolution choices, graphics and visibility settings, input configuration and overall configuration consistency.</p></details>
 <details><summary>Is the goal simply to turn every graphics setting down?</summary><p>No. The current service design is built around balancing visibility, clarity, performance and repeatability rather than blindly maxing out or stripping down every setting.</p></details>
@@ -97,7 +157,7 @@
 <details><summary>Can I see the software and process working before I order?</summary><p>Yes. The Field Tests section is reserved for real demonstrations, before/after captures and walkthrough clips. Only actual footage and real measurements should be published there.</p></details>
 <details><summary>Do I need to send passwords or account credentials?</summary><p>No. Never submit passwords, payment-card information, Steam credentials, Ubisoft credentials or Discord authentication tokens through the recovery intake.</p></details>
 </div></div></section>
-<section class="section reviewsSection" id="reviews"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 06 / CUSTOMER FEEDBACK</div><h2>OPERATOR <span>REVIEWS.</span></h2></div><p>Verified feedback belongs at the bottom, after customers understand the operation.</p></div><div class="reviewHero glassPanel"><strong>4.9</strong><div><div class="stars">★★★★★</div><span>VERIFIED CUSTOMER FEEDBACK / PLACEHOLDER SCORE</span><p>This area is intentionally framed as customer feedback. Replace the placeholder cards with real, permissioned customer reviews before publishing them as verified testimonials.</p></div></div><div class="reviewGrid">
+<section class="section reviewsSection" id="reviews"><div class="shell"><div class="sectionHead"><div><div class="kicker"><i></i> 07 / CUSTOMER FEEDBACK</div><h2>OPERATOR <span>REVIEWS.</span></h2></div><p>Verified feedback belongs at the bottom, after customers understand the operation.</p></div><div class="reviewHero glassPanel"><strong>4.9</strong><div><div class="stars">★★★★★</div><span>VERIFIED CUSTOMER FEEDBACK / PLACEHOLDER SCORE</span><p>This area is intentionally framed as customer feedback. Replace the placeholder cards with real, permissioned customer reviews before publishing them as verified testimonials.</p></div></div><div class="reviewGrid">
 <article class="review"><div class="reviewHead"><span>★★★★★</span><b>VERIFIED / PENDING</b></div><p>“[Real customer feedback goes here. Keep the customer’s original wording and only publish it with permission.]”</p><footer><b>CUSTOMER NAME</b><span>R6 SETTINGS RECOVERY</span></footer></article>
 <article class="review"><div class="reviewHead"><span>★★★★★</span><b>VERIFIED / PENDING</b></div><p>“[Add a real result-focused review describing what changed and why the service was useful.]”</p><footer><b>CUSTOMER NAME</b><span>FPS OPTIMIZATION</span></footer></article>
 <article class="review"><div class="reviewHead"><span>★★★★★</span><b>VERIFIED / PENDING</b></div><p>“[Add a real customer quote here once the feedback has been collected and verified.]”</p><footer><b>CUSTOMER NAME</b><span>FULL RECOVERY</span></footer></article>
